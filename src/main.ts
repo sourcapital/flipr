@@ -50,7 +50,7 @@ new Cron('0 * * * * *', async () => {
 }).run()
 
 // Monitor version, bond, reputation, penalties & chain observations every minute
-await log.info('Setup THORNode monitoring ...')
+await log.info('Setup Chainflip node monitoring ...')
 new Cron('0 * * * * *', async () => {
     const chainflip = _.find(nodes, (node) => {
         return node.constructor.name === Chainflip.name

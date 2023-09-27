@@ -42,7 +42,7 @@ export class Kubernetes {
         if (config.nodeENV !== 'production') return
 
         new Cron(schedule, async () => {
-            const pods = await this.getPods('thornode')
+            const pods = await this.getPods('chainflip')
             await Promise.all(_.map(pods, (pod) => {
                 return this.monitorRestarts(pod)
             }))
