@@ -1,5 +1,6 @@
 import {AxiosResponse} from 'axios'
 import {Node} from './Node.js'
+import {config} from '../config.js'
 import {safeAxiosPost} from '../helpers/Axios.js'
 import {HeartbeatType} from '../integrations/BetterStack.js'
 
@@ -48,7 +49,7 @@ export class Ethereum extends Node {
         let apiUrl: string
         switch (this.chain) {
             case Chain.Ethereum:
-                apiUrl = 'https://ethereum.ninerealms.com'
+                apiUrl = config.nodeEndpoint.ethereum // TODO: Use proper api to cross-check upon mainnet release
                 break
         }
 

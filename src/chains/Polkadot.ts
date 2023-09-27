@@ -1,11 +1,12 @@
 import {AxiosResponse} from 'axios'
 import {Node} from './Node.js'
+import {config} from '../config.js'
 import {safeAxiosPost} from '../helpers/Axios.js'
 import {HeartbeatType} from '../integrations/BetterStack.js'
 
 export enum Chain {
     Polkadot = 'polkadot',
-    Chainflip = 'chainflip'
+    Substrate = 'substrate'
 }
 
 const getChainName = (chain: string | Chain): string => {
@@ -49,10 +50,10 @@ export class Polkadot extends Node {
         let apiUrl: string
         switch (this.chain) {
             case Chain.Polkadot:
-                apiUrl = 'https://rpc-pdot.chainflip.io'
+                apiUrl = config.nodeEndpoint.polkadot // TODO: Use proper api to cross-check upon mainnet release
                 break
-            case Chain.Chainflip:
-                apiUrl = 'xxx' // TODO: Add a chainflip api for cross-checking
+            case Chain.Substrate:
+                apiUrl = config.nodeEndpoint.chainflip // TODO: Use proper api to cross-check upon mainnet release
                 break
         }
 

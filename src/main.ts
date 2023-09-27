@@ -8,7 +8,7 @@ import {BetterStack} from './integrations/BetterStack.js'
 import {Bitcoin} from './chains/Bitcoin.js'
 import {Ethereum} from './chains/Ethereum.js'
 import {Polkadot} from './chains/Polkadot.js'
-import {ChainNode} from './chains/ChainNode.js'
+import {Chainflip} from './chains/Chainflip.js'
 
 
 // Setup globals
@@ -19,7 +19,7 @@ global.kubernetes = new Kubernetes()
 global.loki = new Loki()
 
 const nodes = [
-    new ChainNode(config.nodeEndpoint.chainflip),
+    new Chainflip(config.nodeEndpoint.chainflip),
     new Bitcoin(config.nodeEndpoint.bitcoin),
     new Ethereum(config.nodeEndpoint.ethereum),
     new Polkadot(config.nodeEndpoint.polkadot)
@@ -53,8 +53,8 @@ new Cron('0 * * * * *', async () => {
 await log.info('Setup Chainflip node monitoring ...')
 new Cron('0 * * * * *', async () => {
     const chainflip = _.find(nodes, (node) => {
-        return node.constructor.name === ChainNode.name
-    }) as ChainNode
+        return node.constructor.name === Chainflip.name
+    }) as Chainflip
 
     await Promise.all([
         chainflip.monitorVersion(),

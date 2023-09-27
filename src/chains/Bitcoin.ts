@@ -1,5 +1,6 @@
 import {AxiosResponse} from 'axios'
 import {Node} from './Node.js'
+import {config} from '../config.js'
 import {safeAxiosPost} from '../helpers/Axios.js'
 import {HeartbeatType} from '../integrations/BetterStack.js'
 
@@ -48,7 +49,7 @@ export class Bitcoin extends Node {
         // Await all time critical request together to minimize any delay (e.g. difference in block height)
         const [nodeResponse, apiResponse] = await Promise.all([
             this.query('getblockchaininfo'),
-            this.query('getblockchaininfo', `https://thorchain:password@${this.chain}.ninerealms.com`),
+            this.query('getblockchaininfo', config.nodeEndpoint.bitcoin), // TODO: Use proper api to cross-check upon mainnet release
         ])
 
         if (nodeResponse?.status !== 200) {
