@@ -47,6 +47,7 @@ Clone this repository to your machine and run:
 
 ```shell
 cd flipr
+yarn install
 yarn build
 ```
 
