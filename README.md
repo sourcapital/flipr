@@ -23,16 +23,16 @@ A monitoring application for Chainflip nodes.
 
 ## Environment Variables
 
-| Key                     | Required | Description                                                                                                                    |
-|-------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------|
-| NODE_ENV                | No       | Set to `production`, if you want to run the application in production.                                                         |
-| BETTERSTACK_API_KEY     | Yes      | BetterStack API key, see [here](#uptime).                                                                                      |
-| LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs-optional).                                                                     |
-| CHAINFLIP_NODE_ADDRESS  | Yes      | Public SS58 address of your Chainflip node (`cF...`).                                                                          |
-| NODE_ENDPOINT_CHAINFLIP | Yes      | Chainflip node endpoint URL (e.g. http://chainflip-daemon:9944).                                                               |
-| NODE_ENDPOINT_BITCOIN   | Yes      | Bitcoin node endpoint URL (e.g. [http://username:password@bitcoin-daemon:8332](http://username:password@bitcoin-daemon:8332)). |
-| NODE_ENDPOINT_ETHEREUM  | Yes      | Ethereum node endpoint URL (e.g. http://ethereum-daemon:8545).                                                                 |
-| NODE_ENDPOINT_POLKADOT  | Yes      | Polkadot node endpoint URL (e.g. http://polkadot-daemon:9944).                                                                 |
+| Key                     | Required | Description                                                                                                                |
+|-------------------------|----------|----------------------------------------------------------------------------------------------------------------------------|
+| NODE_ENV                | No       | Set to `production`, if you want to run the application in production.                                                     |
+| BETTERSTACK_API_KEY     | Yes      | BetterStack API key, see [here](#uptime).                                                                                  |
+| LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs-optional).                                                                 |
+| CHAINFLIP_NODE_ADDRESS  | Yes      | Public SS58 address of your Chainflip node (`cF...`).                                                                      |
+| NODE_ENDPOINT_CHAINFLIP | Yes      | Chainflip node endpoint (e.g. http://chainflip-daemon:9944).                                                               |
+| NODE_ENDPOINT_BITCOIN   | Yes      | Bitcoin node endpoint (e.g. [http://username:password@bitcoin-daemon:8332](http://username:password@bitcoin-daemon:8332)). |
+| NODE_ENDPOINT_ETHEREUM  | Yes      | Ethereum node endpoint (e.g. http://ethereum-daemon:8545).                                                                 |
+| NODE_ENDPOINT_POLKADOT  | Yes      | Polkadot node endpoint (e.g. http://polkadot-daemon:9944).                                                                 |
 
 ## Kubernetes
 
@@ -99,7 +99,7 @@ Sign up at [betterstack.com](https://uptime.betterstack.com/?ref=8l7f) and follo
 
 BetterStack Logs is used for log manangement and dashboard visualization.
 
-- Vǫrðr forwards its own logs
+- Flipr forwards its own logs
 - k8s `error` and `warn` logs are also forwarded
 
 #### Source Token
