@@ -1,6 +1,6 @@
 import _ from 'underscore'
 import {config} from '../config.js'
-import {Polkadot} from './Polkadot.js'
+import {Chain, Polkadot} from './Polkadot.js'
 import {safeAxiosPost} from '../helpers/Axios.js'
 import {HeartbeatType, IncidentType} from '../integrations/BetterStack.js'
 import {
@@ -12,12 +12,16 @@ import {
     getExtrinsicsByValidator
 } from '../helpers/GraphQL.js'
 
-export class Chainflip extends Polkadot {
+export class ChainNode extends Polkadot {
     private GRAPHQL_PROCESSOR_ENDPOINT = 'https://processor-perseverance.chainflip.io/graphql'
     private GRAPHQL_CACHE_ENDPOINT = 'https://chainflip-cache-perseverance.chainflip.io/graphql'
 
+    constructor(url: string) {
+        super(url, Chain.Chainflip)
+    }
+
     async initHeartbeats() {
-        await betterStack.initHeartbeats(Chainflip.name, [
+        await betterStack.initHeartbeats(ChainNode.name, [
             HeartbeatType.HEALTH,
             HeartbeatType.VERSION
         ])
@@ -25,36 +29,36 @@ export class Chainflip extends Polkadot {
     }
 
     async isUp(): Promise<boolean> {
-        await log.debug(`${Chainflip.name}: Checking if the node is up ...`)
+        await log.debug(`${ChainNode.name}: Checking if the node is up ...`)
 
         const nodeResponse = await super.query('cf_account_info_v2', undefined, {
             'account_id': this.getNodeAddress()
         })
 
         if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.isUp.name}: Node HTTP status code: ${nodeResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.isUp.name}: Node HTTP status code: ${nodeResponse?.status}`)
             return false
         }
 
         const isOnline = nodeResponse.data.result.is_online
         if (!isOnline) {
-            await log.error(`${Chainflip.name}:${this.isUp.name}: Node is not online!`)
+            await log.error(`${ChainNode.name}:${this.isUp.name}: Node is not online!`)
             return false
         }
 
-        await log.info(`${Chainflip.name}: Node is up!`)
-        await betterStack.sendHeartbeat(Chainflip.name, HeartbeatType.HEALTH)
+        await log.info(`${ChainNode.name}: Node is up!`)
+        await betterStack.sendHeartbeat(ChainNode.name, HeartbeatType.HEALTH)
 
         return await super.isUp()
     }
 
     async monitorVersion() {
-        await log.debug(`${Chainflip.name}: Checking if node version is up-to-date ...`)
+        await log.debug(`${ChainNode.name}: Checking if node version is up-to-date ...`)
 
         const nodeResponse = await this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo)
 
         if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorVersion.name}: HTTP status code: ${nodeResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorVersion.name}: HTTP status code: ${nodeResponse?.status}`)
             return
         }
 
@@ -66,7 +70,7 @@ export class Chainflip extends Polkadot {
         })
 
         if (!node) {
-            await log.info(`${Chainflip.name}:${this.monitorVersion.name}: Node '${nodeAddress}' not bonded!`)
+            await log.info(`${ChainNode.name}:${this.monitorVersion.name}: Node '${nodeAddress}' not bonded!`)
             return
         }
 
@@ -79,23 +83,23 @@ export class Chainflip extends Polkadot {
         }), (version) => {
             return Number(version.replace(/\./g, ''))
         })
-        await log.debug(`${Chainflip.name}:${this.monitorVersion.name}: topVersion = ${topVersion}`)
+        await log.debug(`${ChainNode.name}:${this.monitorVersion.name}: topVersion = ${topVersion}`)
 
         // Parse version as numbers so they can be compared
         const nodeVersionAsNumber = Number(/([0-9]+)\.([0-9]+)\.([0-9]+)/g.exec(nodeVersion)!.slice(1, 4).join(''))
         const topVersionAsNumber = Number(/([0-9]+)\.([0-9]+)\.([0-9]+)/g.exec(topVersion)!.slice(1, 4).join(''))
 
         if (nodeVersionAsNumber < topVersionAsNumber) {
-            await log.warn(`${Chainflip.name}:${this.monitorVersion.name}: nodeVersion < topVersion: '${nodeVersion}' < '${topVersion}'`)
+            await log.warn(`${ChainNode.name}:${this.monitorVersion.name}: nodeVersion < topVersion: '${nodeVersion}' < '${topVersion}'`)
             return
         }
 
-        await log.info(`${Chainflip.name}: Node version is up-to-date!`)
-        await betterStack.sendHeartbeat(Chainflip.name, HeartbeatType.VERSION)
+        await log.info(`${ChainNode.name}: Node version is up-to-date!`)
+        await betterStack.sendHeartbeat(ChainNode.name, HeartbeatType.VERSION)
     }
 
     async monitorBond() {
-        await log.debug(`${Chainflip.name}: Monitoring bond ...`)
+        await log.debug(`${ChainNode.name}: Monitoring bond ...`)
 
         const [nodeResponse, latestAuctionResponse] = await Promise.all([
             this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo),
@@ -103,11 +107,11 @@ export class Chainflip extends Polkadot {
         ])
 
         if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorBond.name}:getActiveAuthorityInfo: HTTP status code: ${nodeResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorBond.name}:getActiveAuthorityInfo: HTTP status code: ${nodeResponse?.status}`)
             return
         }
         if (latestAuctionResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorBond.name}:getLatestAuction: HTTP status code: ${latestAuctionResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorBond.name}:getLatestAuction: HTTP status code: ${latestAuctionResponse?.status}`)
             return
         }
 
@@ -125,7 +129,7 @@ export class Chainflip extends Polkadot {
         })
 
         if (!node) {
-            await log.warn(`${Chainflip.name}:${this.monitorBond.name}: Node '${nodeAddress}' not bonded!`)
+            await log.warn(`${ChainNode.name}:${this.monitorBond.name}: Node '${nodeAddress}' not bonded!`)
             return
         }
 
@@ -133,16 +137,16 @@ export class Chainflip extends Polkadot {
         const reward = node.reward
         const minActiveBond = Number(latestAuctionResponse.data.data.auction.minActiveBid) / 1e18
 
-        await log.info(`${Chainflip.name}:Bond: bond = ${Math.round(bond)}; reward = ${Math.round(reward)}; minActiveBond = ${Math.round(minActiveBond)}`)
+        await log.info(`${ChainNode.name}:Bond: bond = ${Math.round(bond)}; reward = ${Math.round(reward)}; minActiveBond = ${Math.round(minActiveBond)}`)
     }
 
     async monitorReputation() {
-        await log.debug(`${Chainflip.name}: Monitoring reputation ...`)
+        await log.debug(`${ChainNode.name}: Monitoring reputation ...`)
 
         const nodeResponse = await this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getActiveCacheValidators)
 
         if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorReputation.name}: Node HTTP status code: ${nodeResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorReputation.name}: Node HTTP status code: ${nodeResponse?.status}`)
             return
         }
 
@@ -162,7 +166,7 @@ export class Chainflip extends Polkadot {
         })
 
         if (!node) {
-            await log.warn(`${Chainflip.name}:${this.monitorReputation.name}: Node is not active. Skipping reputation monitoring ...`)
+            await log.warn(`${ChainNode.name}:${this.monitorReputation.name}: Node is not active. Skipping reputation monitoring ...`)
             return
         }
 
@@ -179,23 +183,23 @@ export class Chainflip extends Polkadot {
         const mid = Math.floor(nodes.length / 2)
         const median = nodes.length % 2 === 0 ? (nodes[mid - 1].reputation + nodes[mid].reputation) / 2 : nodes[mid].reputation
 
-        await log.info(`${Chainflip.name}:Reputation: node = ${Math.round(node.reputation)}; network = ${Math.round(best)} (best), ${Math.round(median)} (median), ${Math.round(average)} (average), ${Math.round(worstTop10Threshold)} (worstTop10Threshold), ${Math.round(worst)} (worst)`)
+        await log.info(`${ChainNode.name}:Reputation: node = ${Math.round(node.reputation)}; network = ${Math.round(best)} (best), ${Math.round(median)} (median), ${Math.round(average)} (average), ${Math.round(worstTop10Threshold)} (worstTop10Threshold), ${Math.round(worst)} (worst)`)
 
         // Alert if node enters the worst-top-10
         if (node.reputation < worstTop10Threshold) {
-            await betterStack.createReputationIncident(Chainflip.name, node.reputation, worstTop10Threshold)
+            await betterStack.createReputationIncident(ChainNode.name, node.reputation, worstTop10Threshold)
         } else {
-            await betterStack.resolveIncidents(Chainflip.name, IncidentType.REPUTATION)
+            await betterStack.resolveIncidents(ChainNode.name, IncidentType.REPUTATION)
         }
     }
 
     async monitorPenalties() {
-        await log.debug(`${Chainflip.name}: Checking if node has been penalized ...`)
+        await log.debug(`${ChainNode.name}: Checking if node has been penalized ...`)
 
         const syncStateResponse = await super.query('system_syncState')
 
         if (syncStateResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:system_syncState: HTTP status code: ${syncStateResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorChainObservations.name}:system_syncState: HTTP status code: ${syncStateResponse?.status}`)
             return
         }
 
@@ -206,7 +210,7 @@ export class Chainflip extends Polkadot {
         })
 
         if (penaltiesResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorPenalties.name}:paginatedPenaltiesQuery: HTTP status code: ${penaltiesResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorPenalties.name}:paginatedPenaltiesQuery: HTTP status code: ${penaltiesResponse?.status}`)
             return
         }
 
@@ -227,14 +231,14 @@ export class Chainflip extends Polkadot {
 
         // Alert if node was penalized
         if (penaltyAmount > 0) {
-            await betterStack.createPenaltyIncident(Chainflip.name, penaltyAmount, reasons)
+            await betterStack.createPenaltyIncident(ChainNode.name, penaltyAmount, reasons)
         } else {
-            await betterStack.resolveIncidents(Chainflip.name, IncidentType.PENALTY)
+            await betterStack.resolveIncidents(ChainNode.name, IncidentType.PENALTY)
         }
     }
 
     async monitorChainObservations() {
-        await log.debug(`${Chainflip.name}: Monitoring chain observations ...`)
+        await log.debug(`${ChainNode.name}: Monitoring chain observations ...`)
 
         const [syncStateResponse, nodeResponse] = await Promise.all([
             super.query('system_syncState'),
@@ -244,11 +248,11 @@ export class Chainflip extends Polkadot {
         ])
 
         if (syncStateResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:system_syncState: HTTP status code: ${syncStateResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorChainObservations.name}:system_syncState: HTTP status code: ${syncStateResponse?.status}`)
             return
         }
         if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getValidatorLatestBlockInfo: HTTP status code: ${nodeResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorChainObservations.name}:getValidatorLatestBlockInfo: HTTP status code: ${nodeResponse?.status}`)
             return
         }
 
@@ -262,7 +266,7 @@ export class Chainflip extends Polkadot {
         })
 
         if (extrinsicsResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getExtrinsicsByValidator: Node HTTP status code: ${extrinsicsResponse?.status}`)
+            await log.error(`${ChainNode.name}:${this.monitorChainObservations.name}:getExtrinsicsByValidator: Node HTTP status code: ${extrinsicsResponse?.status}`)
             return
         }
 
@@ -283,7 +287,7 @@ export class Chainflip extends Polkadot {
 
         // Log all the observed block heights for all chains
         for (const obversation of latestObservations) {
-            await log.info(`${Chainflip.name}:${this.monitorChainObservations.name}: chain = ${obversation.chain}; blockHeight = ${obversation.blockHeight}`)
+            await log.info(`${ChainNode.name}:${this.monitorChainObservations.name}: chain = ${obversation.chain}; blockHeight = ${obversation.blockHeight}`)
         }
     }
 
