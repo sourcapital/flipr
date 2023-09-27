@@ -43,6 +43,8 @@ A monitoring application for Chainflip nodes.
 
 ### Build
 
+Clone this repository to your machine and run:
+
 ```shell
 cd flipr
 yarn build
@@ -75,18 +77,18 @@ Environment="NODE_ENDPOINT_BITCOIN=XXX"
 Environment="NODE_ENDPOINT_ETHEREUM=XXX"
 Environment="NODE_ENDPOINT_POLKADOT=XXX"
 
-ExecStart={PATH_TO_NODE_INSTALLATION} {PATH_TO_FLIPR_DIRECTORY}/dist/main.js
+ExecStart={NODE_INSTALLATION_PATH} {DIRECTORY_PATH}/dist/main.js
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-- `PATH_TO_NODE_INSTALLATION`: Path to your `node` binary
-- `PATH_TO_FLIPR_DIRECTORY`: Path to the this project directory
+- `NODE_INSTALLATION_PATH`: Path to your `node` binary
+- `DIRECTORY_PATH`: Path to the this project directory
 
 #### Set Environment Variables
 
-Replace placeholders like `BETTERSTACK_API_KEY` with the actual values of your environment variables.
+Replace the environment variables with your environment variables.
 
 #### Reload systemd
 
@@ -126,7 +128,7 @@ If you want to monitor the application logs:
 sudo journalctl -f -u flipr
 ```
 
-This will show real-time logs of the flipr-monitor service.
+This will show real-time logs of the flipr service.
 
 #### Stopping and Restarting
 
