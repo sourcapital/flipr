@@ -34,6 +34,102 @@ A monitoring application for Chainflip nodes.
 | NODE_ENDPOINT_ETHEREUM  | Yes      | Ethereum node endpoint (e.g. http://ethereum-daemon:8545).                                                                 |
 | NODE_ENDPOINT_POLKADOT  | Yes      | Polkadot node endpoint (e.g. http://polkadot-daemon:9944).                                                                 |
 
+## Systemd Service
+
+To ensure that the app runs continuously in the background and automatically restarts on failures or reboots, you can use systemd, a system and service manager for Linux.
+
+### Prerequisites
+
+Make sure you have `node` installed and accessible. If not, install it via NVM: https://github.com/nvm-sh/nvm
+
+#### Create a systemd Service File
+
+Open a new service file in an editor with root permissions:
+
+```shell
+sudo vi /etc/systemd/system/flipr.service
+```
+
+Copy and paste the following content:
+
+```unit file (systemd)
+[Unit]
+Description=Flipr
+
+[Service]
+Restart=always
+RestartSec=10
+
+Environment="NODE_ENV=production"
+Environment="BETTERSTACK_API_KEY={BETTERSTACK_API_KEY}"
+Environment="LOGS_SOURCE_TOKEN={LOGS_SOURCE_TOKEN}"
+Environment="CHAINFLIP_NODE_ADDRESS={CHAINFLIP_NODE_ADDRESS}"
+Environment="NODE_ENDPOINT_CHAINFLIP={NODE_ENDPOINT_CHAINFLIP}"
+Environment="NODE_ENDPOINT_BITCOIN={NODE_ENDPOINT_BITCOIN}"
+Environment="NODE_ENDPOINT_ETHEREUM={NODE_ENDPOINT_ETHEREUM}"
+Environment="NODE_ENDPOINT_POLKADOT={NODE_ENDPOINT_POLKADOT}"
+
+ExecStart={PATH_TO_NODE_INSTALLATION} /home/{YOUR_USERNAME}/flipr/dist/main.js
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Replace `{PATH_TO_NODE_INSTALLATION}` with the absolute path to your `node` binary and `{YOUR_USERNAME}` with your actual username.
+
+#### Set Environment Variables
+
+Replace placeholders like `{BETTERSTACK_API_KEY}` with the actual values of your environment variables.
+
+#### Reload systemd
+
+After creating the service file, inform systemd of the new service:
+
+```shell
+sudo systemctl daemon-reload
+```
+
+#### Enable and Start the Service
+
+To make sure the service starts on boot:
+
+```shell
+sudo systemctl enable flipr
+```
+
+#### Start the service with
+
+```shell
+sudo systemctl start flipr
+```
+
+#### Checking the Service Status
+
+You can check the status of your service at any time with:
+
+```shell
+sudo systemctl status flipr
+```
+
+#### Logs
+
+If you want to monitor the application logs:
+
+```shell
+sudo journalctl -f -u flipr
+```
+
+This will show real-time logs of the flipr-monitor service.
+
+#### Stopping and Restarting
+
+If you need to stop or restart the service:
+
+```
+sudo systemctl stop flipr
+sudo systemctl restart flipr
+```
+
 ## Kubernetes
 
 ### Deploy to Cluster
