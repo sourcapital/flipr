@@ -27,7 +27,7 @@ A monitoring application for Chainflip nodes.
 |-------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------|
 | NODE_ENV                | No       | Set to `production`, if you want to run the application in production.                                                         |
 | BETTERSTACK_API_KEY     | Yes      | BetterStack API key, see [here](#uptime).                                                                                      |
-| LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs).                                                                              |
+| LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs-optional).                                                                     |
 | CHAINFLIP_NODE_ADDRESS  | Yes      | Public SS58 address of your Chainflip node (`cF...`).                                                                          |
 | NODE_ENDPOINT_CHAINFLIP | Yes      | Chainflip node endpoint URL (e.g. http://chainflip-daemon:9944).                                                               |
 | NODE_ENDPOINT_BITCOIN   | Yes      | Bitcoin node endpoint URL (e.g. [http://username:password@bitcoin-daemon:8332](http://username:password@bitcoin-daemon:8332)). |
