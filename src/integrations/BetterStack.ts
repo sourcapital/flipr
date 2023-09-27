@@ -64,9 +64,8 @@ export enum HeartbeatType {
 
 export enum IncidentType {
     RESTART = 'Restart',
-    SLASH_POINTS = 'Slash Points',
-    JAIL = 'Jail',
-    CHAIN_OBSERVATION = 'Chain Observation'
+    REPUTATION = 'Reputation',
+    PENALTY = 'Penalty'
 }
 
 export class BetterStack {
@@ -102,7 +101,7 @@ export class BetterStack {
         const existingHeartbeats = await this.getHeartbeats()
 
         for (const type of types) {
-            const identifier = `${name} ${type} (${config.thornodeAddress!.slice(-4)})`
+            const identifier = `${name} ${type} (${config.chainflipNodeAddress!.slice(-4)})`
             const exists = _.find(existingHeartbeats, (existingHeartbeat) => {
                 return existingHeartbeat.attributes.name === identifier
             })
@@ -134,7 +133,7 @@ export class BetterStack {
     }
 
     async createRestartIncident(name: string, restartCount: number) {
-        const identifier = `${name} ${IncidentType.RESTART} (${config.thornodeAddress!.slice(-4)})`
+        const identifier = `${name} ${IncidentType.RESTART} (${config.chainflipNodeAddress!.slice(-4)})`
         const previousRestarts = this.cache.get(identifier) ?? 0
 
         if (restartCount > previousRestarts) {
@@ -146,42 +145,29 @@ export class BetterStack {
         }
     }
 
-    async createSlashPointIncident(name: string, slashPoints: number, threshold: number) {
-        const identifier = `${name} ${IncidentType.SLASH_POINTS} (${config.thornodeAddress!.slice(-4)})`
-        const previousSlashPoints = this.cache.get(identifier) ?? 0
+    async createReputationIncident(name: string, reputation: number, threshold: number) {
+        const identifier = `${name} ${IncidentType.REPUTATION} (${config.chainflipNodeAddress!.slice(-4)})`
+        const previousReputation = this.cache.get(identifier) ?? 0
 
-        if (slashPoints > threshold && slashPoints > 2 * previousSlashPoints) {
+        if (reputation < threshold && reputation < previousReputation * 0.75) {
             await this.createIncident(
                 `${identifier}`,
-                `${name} has accumulated ${numeral(slashPoints).format('0,0')} slash points!`
+                `${name} node's reputation fell to ${numeral(reputation).format('0,0')}!`
             )
-            this.cache.set(identifier, slashPoints)
+            this.cache.set(identifier, reputation)
         }
     }
 
-    async createJailIncident(name: string, numberOfblocks: number, releaseHeight: number) {
-        const identifier = `${name} ${IncidentType.JAIL} (${config.thornodeAddress!.slice(-4)})`
-        const previousReleaseHeight = this.cache.get(identifier) ?? 0
+    async createPenaltyIncident(name: string, penaltyAmount: number, reasons: string[]) {
+        const identifier = `${name} ${IncidentType.PENALTY} (${config.chainflipNodeAddress!.slice(-4)})`
+        const previousPenaltyAmount = this.cache.get(identifier) ?? 0
 
-        if (releaseHeight > previousReleaseHeight) {
+        if (penaltyAmount > 0 && penaltyAmount > previousPenaltyAmount * 1.5) {
             await this.createIncident(
                 `${identifier}`,
-                `${name} has been jailed for ${numeral(numberOfblocks).format('0,0')} blocks! (until: ${numeral(releaseHeight).format('0,0')})`
+                `${name} node has been penalized for ${numeral(penaltyAmount).format('0,0')} reputation! (${reasons.join(', ')})`
             )
-            this.cache.set(identifier, releaseHeight)
-        }
-    }
-
-    async createChainObservationIncident(name: string, blocksBehind: number) {
-        const identifier = `${name} ${IncidentType.CHAIN_OBSERVATION} (${config.thornodeAddress!.slice(-4)})`
-        const previousBlocksBehind = this.cache.get(identifier) ?? 0
-
-        if (blocksBehind > 2 * previousBlocksBehind) {
-            await this.createIncident(
-                `${identifier}`,
-                `${name} is ${numeral(blocksBehind).format('0,0')} blocks behind the majority observation of the network!`
-            )
-            this.cache.set(identifier, blocksBehind)
+            this.cache.set(identifier, penaltyAmount)
         }
     }
 
@@ -193,7 +179,7 @@ export class BetterStack {
     async resolveIncidents(name: string, type: IncidentType) {
         if (config.nodeENV !== 'production') return
 
-        const identifier = `${name} ${type} (${config.thornodeAddress!.slice(-4)})`
+        const identifier = `${name} ${type} (${config.chainflipNodeAddress!.slice(-4)})`
         const incidents = await this.getIncidents(identifier, false, false)
 
         for (const incident of incidents) {
@@ -207,7 +193,7 @@ export class BetterStack {
     }
 
     async deleteIncidents(name: string, type: IncidentType) {
-        const identifier = `${name} ${type} (${config.thornodeAddress!.slice(-4)})`
+        const identifier = `${name} ${type} (${config.chainflipNodeAddress!.slice(-4)})`
         let incidents = await this.getIncidents(identifier, undefined, false)
 
         for (const incident of incidents) {
@@ -265,7 +251,7 @@ export class BetterStack {
     }
 
     private async getHeartbeat(name: string, type: HeartbeatType): Promise<Heartbeat> {
-        const identifier = `${name} ${type} (${config.thornodeAddress!.slice(-4)})`
+        const identifier = `${name} ${type} (${config.chainflipNodeAddress!.slice(-4)})`
 
         const heartbeats = await this.getHeartbeats()
         let heartbeat = _.first(_.filter(heartbeats, (heartbeat) => {
@@ -310,7 +296,7 @@ export class BetterStack {
     }
 
     private async getHeartbeatGroup(name: string): Promise<HeartbeatGroup> {
-        const identifier = `${name} (${config.thornodeAddress!.slice(-4)})`
+        const identifier = `${name} (${config.chainflipNodeAddress!.slice(-4)})`
 
         const groups = await this.getHeartbeatGroups()
         let group = _.first(_.filter(groups, (group) => {

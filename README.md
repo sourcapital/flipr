@@ -1,36 +1,38 @@
-# Vǫrðr 👻
+# Flipr 🐬
 
-A monitoring application for THORNodes.
-
-> A Vǫrðr or warden is a guardian spirit who will follow the soul of a living person from birth until death.
+A monitoring application for Chainflip nodes.
 
 ## Features
 
 - All chains are monitored for `Health` and `Sync Status` every minute
-- THORChain version is monitored every minute
+- Chainflip node version is monitored every minute
 - Kubernetes pod restarts are monitored every minute
 - Kubernetes pod logs of all chains are aggregated
-- Slash points are monitored every minute
-- Jailing is monitored every minute
+- Reputation is monitored every minute
+- Penalties are monitored every minute
 - Chain observations are monitored every minute
 - Supports multiple nodes
 
 ## Supported Chains
 
-| Client   | Chain                                                              |
-|----------|--------------------------------------------------------------------|
-| Bitcoin  | Bitcoin (BTC), Litecoin (LTC), Bitcoin Cash (BCH), Dogecoin (DOGE) |
-| Ethereum | Ethereum (ETH), Avalanche (AVAX), Binance Smart Chain (BSC)        |
-| Cosmos   | Cosmos (ATOM), Binance Chain (BNB), THORChain (RUNE)               |
+| Client   | Chain                            |
+|----------|----------------------------------|
+| Bitcoin  | Bitcoin (BTC)                    |
+| Ethereum | Ethereum (ETH)                   |
+| Polkadot | Polkadot (DOT), Chainflip (FLIP) |
 
 ## Environment Variables
 
-| Key                 | Required | Description                                                            |
-|---------------------|----------|------------------------------------------------------------------------|
-| THORNODE_ADDRESS    | Yes      | Set to the address of your THORNode (`thor...`).                       |
-| BETTERSTACK_API_KEY | Yes      | BetterStack API key, see [here](#uptime).                              |
-| LOGS_SOURCE_TOKEN   | No       | BetterStack Logs source token, see [here](#logs).                      |
-| NODE_ENV            | No       | Set to `production`, if you want to run the application in production. |
+| Key                     | Required | Description                                                                                                                    |
+|-------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------|
+| NODE_ENV                | No       | Set to `production`, if you want to run the application in production.                                                         |
+| BETTERSTACK_API_KEY     | Yes      | BetterStack API key, see [here](#uptime).                                                                                      |
+| LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs).                                                                              |
+| CHAINFLIP_NODE_ADDRESS  | Yes      | Public SS58 address of your Chainflip node (`cF...`).                                                                          |
+| NODE_ENDPOINT_CHAINFLIP | Yes      | Chainflip node endpoint URL (e.g. http://chainflip-daemon:9944).                                                               |
+| NODE_ENDPOINT_BITCOIN   | Yes      | Bitcoin node endpoint URL (e.g. [http://username:password@bitcoin-daemon:8332](http://username:password@bitcoin-daemon:8332)). |
+| NODE_ENDPOINT_ETHEREUM  | Yes      | Ethereum node endpoint URL (e.g. http://ethereum-daemon:8545).                                                                 |
+| NODE_ENDPOINT_POLKADOT  | Yes      | Polkadot node endpoint URL (e.g. http://polkadot-daemon:9944).                                                                 |
 
 ## Kubernetes
 
@@ -85,16 +87,15 @@ BetterStack Uptime is used for alerting and incident management.
 - Heartbeats are sent every minute for `Health` and `Sync Status` of the nodes
 - Missed heartbeats create incidents
 - Kubernetes pod restarts create incidents
-- High slash points create incidents
-- Jailing creates incidents
-- Lagging chain observations create incidents
-- Outdated THORChain versions creates incidents
+- Low reputation create incidents
+- Penalties create incidents
+- Outdated Chainflip node versions creates incidents
 
 #### API Key
 
 Sign up at [betterstack.com](https://uptime.betterstack.com/?ref=8l7f) and follow the [docs](https://betterstack.com/docs/uptime/api/getting-started-with-uptime-api/) to get the API key.
 
-### Logs
+### Logs (optional)
 
 BetterStack Logs is used for log manangement and dashboard visualization.
 

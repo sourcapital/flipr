@@ -4,10 +4,7 @@ import {safeAxiosPost} from '../helpers/Axios.js'
 import {HeartbeatType} from '../integrations/BetterStack.js'
 
 export enum Chain {
-    Bitcoin = 'bitcoin',
-    Litecoin = 'litecoin',
-    BitcoinCash = 'bitcoin-cash',
-    Dogecoin = 'dogecoin'
+    Bitcoin = 'bitcoin'
 }
 
 const getChainName = (chain: string | Chain): string => {

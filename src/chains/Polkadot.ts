@@ -1,23 +1,23 @@
+import {AxiosResponse} from 'axios'
 import {Node} from './Node.js'
-import {safeAxiosGet} from '../helpers/Axios.js'
+import {safeAxiosPost} from '../helpers/Axios.js'
 import {HeartbeatType} from '../integrations/BetterStack.js'
 
 export enum Chain {
-    Cosmos = 'cosmos',
-    Binance = 'binance',
-    Thorchain = 'thorchain'
+    Polkadot = 'polkadot',
+    Chainflip = 'chainflip'
 }
 
 const getChainName = (chain: string | Chain): string => {
     return Object.entries(Chain).find(([, val]) => val === chain)?.[0]!
 }
 
-export class Cosmos extends Node {
+export class Polkadot extends Node {
     private readonly chain: Chain
 
     constructor(url: string, chain?: Chain) {
         super(url)
-        this.chain = chain ?? Chain.Cosmos
+        this.chain = chain ?? Chain.Polkadot
     }
 
     async initHeartbeats() {
@@ -30,7 +30,7 @@ export class Cosmos extends Node {
     async isUp(): Promise<boolean> {
         await log.debug(`${getChainName(this.chain)}: Checking if the node is up ...`)
 
-        const nodeResponse = await safeAxiosGet(`${this.url}/health`)
+        const nodeResponse = await this.query('system_health')
 
         if (nodeResponse?.status !== 200) {
             await log.error(`${getChainName(this.chain)}:${this.isUp.name}:health: Node HTTP status code: ${nodeResponse?.status}`)
@@ -48,21 +48,18 @@ export class Cosmos extends Node {
 
         let apiUrl: string
         switch (this.chain) {
-            case Chain.Cosmos:
-                apiUrl = 'https://gaia.ninerealms.com/status'
+            case Chain.Polkadot:
+                apiUrl = 'https://rpc-pdot.chainflip.io'
                 break
-            case Chain.Binance:
-                apiUrl = 'https://binance.ninerealms.com/status'
-                break
-            case Chain.Thorchain:
-                apiUrl = 'https://rpc.ninerealms.com/status'
+            case Chain.Chainflip:
+                apiUrl = 'xxx' // TODO: Add a chainflip api for cross-checking
                 break
         }
 
         // Await all time critical request together to minimize any delay (e.g. difference in block height)
         const [nodeResponse, apiResponse] = await Promise.all([
-            safeAxiosGet(`${this.url}/status`),
-            safeAxiosGet(apiUrl)
+            this.query('system_syncState'),
+            this.query('system_syncState', apiUrl)
         ])
 
         if (nodeResponse?.status !== 200) {
@@ -74,7 +71,9 @@ export class Cosmos extends Node {
             // Continue if the API response is invalid, apiBlockHeight defaults to -1 below
         }
 
-        const isSyncing = nodeResponse.data.result.sync_info.catching_up
+        const nodeCurrentBlock = Number(nodeResponse.data.result.currentBlock)
+        const nodeHighestBlock = Number(nodeResponse.data.result.highestBlock)
+        const isSyncing = nodeCurrentBlock < nodeHighestBlock
         await log.debug(`${getChainName(this.chain)}:${this.isSynced.name}: isSyncing = ${isSyncing}`)
 
         // Check if node is still syncing
@@ -83,8 +82,8 @@ export class Cosmos extends Node {
             return false
         }
 
-        const nodeBlockHeight = Number(nodeResponse.data.result.sync_info.latest_block_height)
-        const apiBlockHeight = Number(apiResponse?.data.result.sync_info.latest_block_height ?? -1)
+        const nodeBlockHeight = nodeCurrentBlock
+        const apiBlockHeight = Number(apiResponse?.data.result.currentBlock ?? -1)
         await log.info(`${getChainName(this.chain)}:${this.isSynced.name}: nodeBlockHeight = ${nodeBlockHeight}; apiBlockHeight = ${apiBlockHeight}`)
 
         // Check if node is behind the api block height (1 block behind is ok due to network latency)
@@ -97,5 +96,14 @@ export class Cosmos extends Node {
         await betterStack.sendHeartbeat(getChainName(this.chain), HeartbeatType.SYNC_STATUS)
 
         return true
+    }
+
+    protected query(method: string, url?: string, params?: {}): Promise<AxiosResponse | undefined> {
+        return safeAxiosPost(url ?? this.url, {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: params ?? {}
+        }, {})
     }
 }

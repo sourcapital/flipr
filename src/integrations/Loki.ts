@@ -15,7 +15,7 @@ export class Loki {
 
         const host = config.nodeENV === 'production' ? 'loki.loki-system' : 'localhost'
         const nowTsNs = moment().unix() * 1e9 // Timestamp in nano seconds
-        this.ws = new WebSocket(`ws://${host}:3100/loki/api/v1/tail?query={namespace="thornode"}&start=${nowTsNs}`)
+        this.ws = new WebSocket(`ws://${host}:3100/loki/api/v1/tail?query={namespace="chainflip"}&start=${nowTsNs}`)
 
         this.ws.on('open', async () => {
             await log.debug(`${Loki.name}: WebSocket connected!`)

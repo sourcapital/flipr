@@ -1,18 +1,18 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: vordr
+  name: flipr
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: vordr
-  namespace: vordr
+  name: flipr
+  namespace: flipr
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: thornode
+  namespace: chainflip
   name: get-pods
 rules:
   - apiGroups: [ '' ]
@@ -22,12 +22,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: vordr
-  namespace: thornode
+  name: flipr
+  namespace: chainflip
 subjects:
   - kind: ServiceAccount
-    name: vordr
-    namespace: vordr
+    name: flipr
+    namespace: flipr
 roleRef:
   kind: Role
   name: get-pods
@@ -36,34 +36,42 @@ roleRef:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vordr
-  namespace: vordr
+  name: flipr
+  namespace: flipr
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: vordr
+      app: flipr
   template:
     metadata:
       labels:
-        app: vordr
+        app: flipr
     spec:
-      serviceAccountName: vordr
+      serviceAccountName: flipr
       containers:
-        - name: vordr
-          image: sourcap/vordr:release-1.8.1@sha256:0cc6ddd94b43480202c2e825cb34915463daa6675fffdea825e99b0f0736bbef
+        - name: flipr
+          image: sourcap/flipr:release-1.0.0@sha256:xxxx
           imagePullPolicy: IfNotPresent
           env:
             - name: NODE_ENV
               value: 'production'
-            - name: THORNODE_ADDRESS
-              value: '{THORNODE_ADDRESS}'
             - name: BETTERSTACK_API_KEY
               value: '{BETTERSTACK_API_KEY}'
             - name: LOGS_SOURCE_TOKEN
               value: '{LOGS_SOURCE_TOKEN}'
+            - name: CHAINFLIP_NODE_ADDRESS
+              value: '{CHAINFLIP_NODE_ADDRESS}'
+            - name: NODE_ENDPOINT_CHAINFLIP
+              value: '{NODE_ENDPOINT_CHAINFLIP}'
+            - name: NODE_ENDPOINT_BITCOIN
+              value: '{NODE_ENDPOINT_BITCOIN}'
+            - name: NODE_ENDPOINT_ETHEREUM
+              value: '{NODE_ENDPOINT_ETHEREUM}'
+            - name: NODE_ENDPOINT_POLKADOT
+              value: '{NODE_ENDPOINT_POLKADOT}'
           resources:
             limits:
               cpu: '0.2'

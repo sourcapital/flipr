@@ -12,18 +12,10 @@ declare type K8sPod = {
 }
 
 enum Container {
-    Bifrost = 'bifrost',
-    Gateway = 'gateway',
-    Thornode = 'thornode',
-    Binance = 'binance-daemon',
+    Chainflip = 'chainflip-daemon',
     Bitcoin = 'bitcoin-daemon',
     Ethereum = 'ethereum-daemon',
-    Litecoin = 'litecoin-daemon',
-    BitcoinCash = 'bitcoin-cash-daemon',
-    Dogecoin = 'dogecoin-daemon',
-    Cosmos = 'gaia-daemon',
-    Avalanche = 'avalanche-daemon',
-    BinanceSmartChain = 'binance-smart-daemon'
+    Polkadot = 'polkadot-daemon'
 }
 
 export const getContainerName = (container: string | Container): string => {
