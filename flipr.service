@@ -1,0 +1,22 @@
+[Unit]
+Description=A monitoring application for Chainflip nodes
+
+[Service]
+User=<YOUR_USERNAME>
+
+Restart=always
+RestartSec=10
+
+Environment="NODE_ENV=production"
+Environment="BETTERSTACK_API_KEY={BETTERSTACK_API_KEY}"
+Environment="LOGS_SOURCE_TOKEN={LOGS_SOURCE_TOKEN}"
+Environment="CHAINFLIP_NODE_ADDRESS={CHAINFLIP_NODE_ADDRESS}"
+Environment="NODE_ENDPOINT_CHAINFLIP={NODE_ENDPOINT_CHAINFLIP}"
+Environment="NODE_ENDPOINT_BITCOIN={NODE_ENDPOINT_BITCOIN}"
+Environment="NODE_ENDPOINT_ETHEREUM={NODE_ENDPOINT_ETHEREUM}"
+Environment="NODE_ENDPOINT_POLKADOT={NODE_ENDPOINT_POLKADOT}"
+
+ExecStart=/usr/bin/node $HOME/flipr/dist/main.js
+
+[Install]
+WantedBy=multi-user.target
