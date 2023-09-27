@@ -36,11 +36,17 @@ A monitoring application for Chainflip nodes.
 
 ## Systemd Service
 
-To ensure that the app runs continuously in the background and automatically restarts on failures or reboots, you can use systemd, a system and service manager for Linux.
-
 ### Prerequisites
 
-Make sure you have `node` installed and accessible. If not, install it via NVM: https://github.com/nvm-sh/nvm
+- `node` (v16.17): Install it via [NVM](https://github.com/nvm-sh/nvm)
+- `yarn`: Install it via `npm install -g yarn`
+
+### Build
+
+```shell
+cd flipr
+yarn build
+```
 
 #### Create a systemd Service File
 
@@ -61,25 +67,26 @@ Restart=always
 RestartSec=10
 
 Environment="NODE_ENV=production"
-Environment="BETTERSTACK_API_KEY={BETTERSTACK_API_KEY}"
-Environment="LOGS_SOURCE_TOKEN={LOGS_SOURCE_TOKEN}"
-Environment="CHAINFLIP_NODE_ADDRESS={CHAINFLIP_NODE_ADDRESS}"
-Environment="NODE_ENDPOINT_CHAINFLIP={NODE_ENDPOINT_CHAINFLIP}"
-Environment="NODE_ENDPOINT_BITCOIN={NODE_ENDPOINT_BITCOIN}"
-Environment="NODE_ENDPOINT_ETHEREUM={NODE_ENDPOINT_ETHEREUM}"
-Environment="NODE_ENDPOINT_POLKADOT={NODE_ENDPOINT_POLKADOT}"
+Environment="BETTERSTACK_API_KEY=XXX"
+Environment="LOGS_SOURCE_TOKEN=XXX"
+Environment="CHAINFLIP_NODE_ADDRESS=XXX"
+Environment="NODE_ENDPOINT_CHAINFLIP=XXX"
+Environment="NODE_ENDPOINT_BITCOIN=XXX"
+Environment="NODE_ENDPOINT_ETHEREUM=XXX"
+Environment="NODE_ENDPOINT_POLKADOT=XXX"
 
-ExecStart={PATH_TO_NODE_INSTALLATION} /home/{YOUR_USERNAME}/flipr/dist/main.js
+ExecStart={PATH_TO_NODE_INSTALLATION} {PATH_TO_FLIPR_DIRECTORY}/dist/main.js
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Replace `{PATH_TO_NODE_INSTALLATION}` with the absolute path to your `node` binary and `{YOUR_USERNAME}` with your actual username.
+- `PATH_TO_NODE_INSTALLATION`: Path to your `node` binary
+- `PATH_TO_FLIPR_DIRECTORY`: Path to the this project directory
 
 #### Set Environment Variables
 
-Replace placeholders like `{BETTERSTACK_API_KEY}` with the actual values of your environment variables.
+Replace placeholders like `BETTERSTACK_API_KEY` with the actual values of your environment variables.
 
 #### Reload systemd
 
