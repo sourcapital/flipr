@@ -58,11 +58,11 @@ spec:
             - name: NODE_ENV
               value: 'production'
             - name: BETTERSTACK_API_KEY
-              value: 'XXXX'
+              value: 'XXX'
             - name: LOGS_SOURCE_TOKEN
-              value: 'XXXX'
+              value: 'XXX'
             - name: CHAINFLIP_NODE_ADDRESS
-              value: 'cFXXXX'
+              value: 'cFXXX'
             - name: NODE_ENDPOINT_CHAINFLIP
               value: 'http://chainflip.chainflip:9944'
             - name: NODE_ENDPOINT_BITCOIN
