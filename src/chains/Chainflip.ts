@@ -35,7 +35,7 @@ export class Chainflip extends Polkadot {
     }
 
     async initHeartbeats() {
-        await betterStack?.initHeartbeats(Chainflip.name, [
+        await global.betterStack?.initHeartbeats(Chainflip.name, [
             HeartbeatType.HEALTH,
             HeartbeatType.VERSION
         ])
@@ -60,7 +60,7 @@ export class Chainflip extends Polkadot {
         }
 
         await log.info(`${Chainflip.name}: Node is up!`)
-        await betterStack?.sendHeartbeat(Chainflip.name, HeartbeatType.HEALTH)
+        await global.betterStack?.sendHeartbeat(Chainflip.name, HeartbeatType.HEALTH)
 
         return await super.isUp()
     }
@@ -111,7 +111,7 @@ export class Chainflip extends Polkadot {
         chainflipVersionGauge.labels(nodeVersion).set(1)
 
         await log.info(`${Chainflip.name}: Node version is up-to-date!`)
-        await betterStack?.sendHeartbeat(Chainflip.name, HeartbeatType.VERSION)
+        await global.betterStack?.sendHeartbeat(Chainflip.name, HeartbeatType.VERSION)
     }
 
     async monitorBond() {
@@ -216,9 +216,9 @@ export class Chainflip extends Polkadot {
 
         // Alert if node enters the worst-top-10
         if (node.reputation < worstTop10Threshold) {
-            await betterStack?.createReputationIncident(Chainflip.name, node.reputation, worstTop10Threshold)
+            await global.betterStack?.createReputationIncident(Chainflip.name, node.reputation, worstTop10Threshold)
         } else {
-            await betterStack?.resolveIncidents(Chainflip.name, IncidentType.REPUTATION)
+            await global.betterStack?.resolveIncidents(Chainflip.name, IncidentType.REPUTATION)
         }
     }
 
@@ -267,9 +267,9 @@ export class Chainflip extends Polkadot {
 
         // Alert if node was penalized
         if (penaltyAmount > 0) {
-            await betterStack?.createPenaltyIncident(Chainflip.name, penaltyAmount, reasons)
+            await global.betterStack?.createPenaltyIncident(Chainflip.name, penaltyAmount, reasons)
         } else {
-            await betterStack?.resolveIncidents(Chainflip.name, IncidentType.PENALTY)
+            await global.betterStack?.resolveIncidents(Chainflip.name, IncidentType.PENALTY)
         }
     }
 

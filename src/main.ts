@@ -29,7 +29,7 @@ const nodes = [
 ]
 
 // Only do BetterStack stuff if it's enabled
-if (betterStack) {
+if (global.betterStack) {
     // Setup BetterStack heartbeats (in correct sequence)
     await log.info('Setup BetterStack heartbeats ...')
     for (const node of nodes) {
@@ -37,7 +37,7 @@ if (betterStack) {
     }
     // Setup BetterStack incident cleanup to run once per hour
     await log.info('Setup BetterStack incident cleanup ...')
-    await betterStack?.setupCleanup('0 0 * * * *')
+    await global.betterStack.setupCleanup('0 0 * * * *')
 }
 
 // Run basic node health monitoring every minute

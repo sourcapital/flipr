@@ -80,7 +80,7 @@ export class BetterStack {
         if (config.nodeENV !== 'production') return
 
         new Cron(schedule, async () => {
-            const incidents = await betterStack!.getIncidents(undefined, true, false)
+            const incidents = await global.betterStack!.getIncidents(undefined, true, false)
             const incidentsToDelete = _.sortBy(incidents, (incident) => {
                 return incident.attributes.started_at
             }).reverse().slice(100) // Get all incidents except the latest 100
