@@ -102,13 +102,13 @@ RestartSec=10
 Environment="NODE_ENV=production"
 Environment="BETTERSTACK_API_KEY=XXX"
 Environment="LOGS_SOURCE_TOKEN=XXX"
-Environment="CHAINFLIP_NODE_ADDRESS=XXX"
-Environment="NODE_ENDPOINT_CHAINFLIP=XXX"
+Environment="CHAINFLIP_NODE_ADDRESS=cFXXX"
+Environment="NODE_ENDPOINT_CHAINFLIP=http://localhost:9944"
 Environment="NODE_ENDPOINT_BITCOIN=XXX"
 Environment="NODE_ENDPOINT_ETHEREUM=XXX"
 Environment="NODE_ENDPOINT_POLKADOT=XXX"
 
-ExecStart={NODE_INSTALLATION_PATH} {DIRECTORY_PATH}/dist/main.js
+ExecStart=<NODE_INSTALLATION_PATH> <DIRECTORY_PATH>/dist/main.js
 
 [Install]
 WantedBy=multi-user.target
@@ -116,8 +116,8 @@ WantedBy=multi-user.target
 
 Set all required environment variables and replace:
 
-- `NODE_INSTALLATION_PATH`: Path to your `node` binary
-- `DIRECTORY_PATH`: Path to the this project directory
+- `<NODE_INSTALLATION_PATH>`: Path to your `node` binary
+- `<DIRECTORY_PATH>`: Path to the this project directory
 
 #### Set Environment Variables
 
