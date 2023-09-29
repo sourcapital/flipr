@@ -1,14 +1,11 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: flipr
----
+# This ServiceAccount provides identity for the flipr application within the chainflip namespace.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: flipr
-  namespace: flipr
+  namespace: chainflip
 ---
+# This Role defines the permissions for listing and getting pods and their logs within the chainflip namespace.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -19,6 +16,7 @@ rules:
     resources: [ 'pods', 'pods/log' ]
     verbs: [ 'get', 'list' ]
 ---
+# This RoleBinding associates the flipr ServiceAccount with the get-pods Role, granting it the permissions defined in the Role.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -27,17 +25,18 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: flipr
-    namespace: flipr
+    namespace: chainflip
 roleRef:
   kind: Role
   name: get-pods
   apiGroup: rbac.authorization.k8s.io
 ---
+# This Deployment specifies how the flipr application should be run in pods within the chainflip namespace.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: flipr
-  namespace: flipr
+  namespace: chainflip
 spec:
   replicas: 1
   strategy:
@@ -59,19 +58,21 @@ spec:
             - name: NODE_ENV
               value: 'production'
             - name: BETTERSTACK_API_KEY
-              value: '{BETTERSTACK_API_KEY}'
+              value: 'XXXX'
             - name: LOGS_SOURCE_TOKEN
-              value: '{LOGS_SOURCE_TOKEN}'
+              value: 'XXXX'
             - name: CHAINFLIP_NODE_ADDRESS
-              value: '{CHAINFLIP_NODE_ADDRESS}'
+              value: 'cFXXXX'
             - name: NODE_ENDPOINT_CHAINFLIP
-              value: '{NODE_ENDPOINT_CHAINFLIP}'
+              value: 'XXXX'
             - name: NODE_ENDPOINT_BITCOIN
-              value: '{NODE_ENDPOINT_BITCOIN}'
+              value: 'XXXX'
             - name: NODE_ENDPOINT_ETHEREUM
-              value: '{NODE_ENDPOINT_ETHEREUM}'
+              value: 'XXXX'
             - name: NODE_ENDPOINT_POLKADOT
-              value: '{NODE_ENDPOINT_POLKADOT}'
+              value: 'XXXX'
+          ports:
+            - containerPort: 3000
           resources:
             limits:
               cpu: '0.2'
@@ -79,3 +80,28 @@ spec:
             requests:
               cpu: '0.2'
               memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            readinessProbe:
+              httpGet:
+                path: /healthz
+                port: 3000
+              initialDelaySeconds: 5
+              timeoutSeconds: 5
+---
+# This Service exposes the flipr application on port 80 and routes traffic to the pods' port 3000.
+apiVersion: v1
+kind: Service
+metadata:
+  name: flipr
+spec:
+  selector:
+    app: flipr
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000

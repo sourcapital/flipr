@@ -1,9 +1,9 @@
 import _ from 'underscore'
+import express from 'express'
+import {register} from 'prom-client'
 import {config} from './config.js'
 import {Log} from './helpers/Log.js'
 import {Cron} from './helpers/Cron.js'
-import {Loki} from './integrations/Loki.js'
-import {Kubernetes} from './integrations/Kubernetes.js'
 import {BetterStack} from './integrations/BetterStack.js'
 import {Bitcoin} from './chains/Bitcoin.js'
 import {Ethereum} from './chains/Ethereum.js'
@@ -14,10 +14,13 @@ import {Chainflip} from './chains/Chainflip.js'
 // Setup globals
 global.sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 global.log = new Log()
-global.betterStack = new BetterStack(config.betterStack.uptime.apiKey)
-global.kubernetes = new Kubernetes()
-global.loki = new Loki()
 
+// Init BetterStack only if the API key is set
+if (config.betterStack.uptime.apiKey) {
+    global.betterStack = new BetterStack(config.betterStack.uptime.apiKey)
+}
+
+// Init nodes
 const nodes = [
     new Chainflip(config.nodeEndpoint.chainflip),
     new Bitcoin(config.nodeEndpoint.bitcoin),
@@ -25,20 +28,19 @@ const nodes = [
     new Polkadot(config.nodeEndpoint.polkadot)
 ]
 
-// Setup BetterStack heartbeats (in correct sequence)
-await log.info('Setup BetterStack heartbeats ...')
-for (const node of nodes) await node.initHeartbeats()
-// Setup BetterStack incident cleanup
-await log.info('Setup BetterStack incident cleanup ...')
-await betterStack.setupCleanup('0 0 * * * *') // once per hour
-// Setup k8s pod restart monitoring
-// await log.info('Setup k8s pod restart monitoring ...')
-// await kubernetes.setupRestartMonitoring('0 * * * * *') // every minute
-// Connect to Loki
-// await log.info('Setup Loki connection ...')
-// await loki.connect()
+// Only do BetterStack stuff if it's enabled
+if (betterStack) {
+    // Setup BetterStack heartbeats (in correct sequence)
+    await log.info('Setup BetterStack heartbeats ...')
+    for (const node of nodes) {
+        await node.initHeartbeats()
+    }
+    // Setup BetterStack incident cleanup to run once per hour
+    await log.info('Setup BetterStack incident cleanup ...')
+    await betterStack?.setupCleanup('0 0 * * * *')
+}
 
-// Run node health monitoring every minute
+// Run basic node health monitoring every minute
 await log.info('Setup chain daemon monitoring ...')
 new Cron('0 * * * * *', async () => {
     await Promise.all(_.flatten(_.map(nodes, (node) => {
@@ -49,7 +51,7 @@ new Cron('0 * * * * *', async () => {
     })))
 }).run()
 
-// Monitor version, bond, reputation, penalties & chain observations every minute
+// Run Chainflip node specific monitoring every minute
 await log.info('Setup Chainflip node monitoring ...')
 new Cron('0 * * * * *', async () => {
     const chainflip = _.find(nodes, (node) => {
@@ -64,3 +66,19 @@ new Cron('0 * * * * *', async () => {
         chainflip.monitorChainObservations()
     ])
 }).run()
+
+// Run metrics server
+const app = express()
+
+app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', register.contentType)
+    res.end(await register.metrics())
+})
+
+app.get('/healthz', (req, res) => {
+    res.sendStatus(200)
+})
+
+app.listen(3000, async () => {
+    await log.info(`Start metrics server at http://localhost:3000/metrics ...`)
+})

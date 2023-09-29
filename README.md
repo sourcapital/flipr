@@ -11,7 +11,6 @@ A monitoring application for Chainflip nodes.
 - Reputation is monitored every minute
 - Penalties are monitored every minute
 - Chain observations are monitored every minute
-- Supports multiple nodes
 
 ## Supported Chains
 
@@ -23,16 +22,47 @@ A monitoring application for Chainflip nodes.
 
 ## Environment Variables
 
-| Key                     | Required | Description                                                                                                                |
-|-------------------------|----------|----------------------------------------------------------------------------------------------------------------------------|
-| NODE_ENV                | No       | Set to `production`, if you want to run the application in production.                                                     |
-| BETTERSTACK_API_KEY     | Yes      | BetterStack API key, see [here](#uptime).                                                                                  |
-| LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs-optional).                                                                 |
-| CHAINFLIP_NODE_ADDRESS  | Yes      | Public SS58 address of your Chainflip node (`cF...`).                                                                      |
-| NODE_ENDPOINT_CHAINFLIP | Yes      | Chainflip node endpoint (e.g. http://chainflip-daemon:9944).                                                               |
-| NODE_ENDPOINT_BITCOIN   | Yes      | Bitcoin node endpoint (e.g. [http://username:password@bitcoin-daemon:8332](http://username:password@bitcoin-daemon:8332)). |
-| NODE_ENDPOINT_ETHEREUM  | Yes      | Ethereum node endpoint (e.g. http://ethereum-daemon:8545).                                                                 |
-| NODE_ENDPOINT_POLKADOT  | Yes      | Polkadot node endpoint (e.g. http://polkadot-daemon:9944).                                                                 |
+| Key                     | Required | Description                                                                                                                      |
+|-------------------------|----------|----------------------------------------------------------------------------------------------------------------------------------|
+| NODE_ENV                | No       | Set to `production`, if you want to run the application in production.                                                           |
+| BETTERSTACK_API_KEY     | No       | BetterStack API key, see [here](#betterstack-optional).                                                                          |
+| LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs-optional).                                                                       |
+| CHAINFLIP_NODE_ADDRESS  | Yes      | Public SS58 address of your Chainflip node (`cF...`).                                                                            |
+| NODE_ENDPOINT_CHAINFLIP | Yes      | Chainflip node endpoint (e.g. http://chainflip.chainflip:9944).                                                                  |
+| NODE_ENDPOINT_BITCOIN   | Yes      | Bitcoin node endpoint (e.g. [http://username:password@bitcoin.chainflip:8332](http://username:password@bitcoin.chainflip:8332)). |
+| NODE_ENDPOINT_ETHEREUM  | Yes      | Ethereum node endpoint (e.g. http://ethereum.chainflip:8545).                                                                    |
+| NODE_ENDPOINT_POLKADOT  | Yes      | Polkadot node endpoint (e.g. http://polkadot.chainflip:9944).                                                                    |
+
+## Kubernetes
+
+### Deployment
+
+#### Add to Cluster
+
+Set all environment variables in `k8s-deployment.yaml` and deploy the application:
+
+```
+kubectl create -f k8s-deployment.yaml
+```
+
+#### Remove from Cluster
+
+Remove the application from the Kubernetes cluster:
+
+```
+kubectl delete -f k8s-deployment.yaml
+```
+
+### Prometheus Metrics Server
+
+You can access all metrics via the `/metrics` endpoint. To scrape these metrics with your Prometheus instance, add the following job to your `prometheus.yaml` configuration:
+
+```yaml
+scrape_configs:
+  - job_name: 'flipr'
+    static_configs:
+      - targets: ['flipr.chainflip']
+```
 
 ## Systemd Service
 
@@ -83,6 +113,8 @@ ExecStart={NODE_INSTALLATION_PATH} {DIRECTORY_PATH}/dist/main.js
 [Install]
 WantedBy=multi-user.target
 ```
+
+Set all required environment variables and replace:
 
 - `NODE_INSTALLATION_PATH`: Path to your `node` binary
 - `DIRECTORY_PATH`: Path to the this project directory
@@ -140,24 +172,6 @@ sudo systemctl stop flipr
 sudo systemctl restart flipr
 ```
 
-## Kubernetes
-
-### Deploy to Cluster
-
-Set all environment variables in `k8s-deployment.yaml` and deploy the application:
-
-```
-kubectl create -f k8s-deployment.yaml
-```
-
-### Remove from Cluster
-
-Remove the application from the Kubernetes cluster:
-
-```
-kubectl delete -f k8s-deployment.yaml
-```
-
 ## Local Environment
 
 ### Installation
@@ -184,7 +198,7 @@ Run via `node.js`:
 yarn start
 ```
 
-## BetterStack
+## BetterStack (optional)
 
 ### Uptime
 

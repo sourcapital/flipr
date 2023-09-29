@@ -11,6 +11,20 @@ import {
     getValidatorLatestBlockInfo,
     getExtrinsicsByValidator
 } from '../helpers/GraphQL.js'
+import {
+    chainflipVersionGauge,
+    nodeBondGauge,
+    nodeRewardGauge,
+    networkMinActiveBondGauge,
+    nodeReputationGauge,
+    networkReputationBestGauge,
+    networkReputationMedianGauge,
+    networkReputationAverageGauge,
+    networkReputationWorstTop10ThresholdGauge,
+    networkReputationWorstGauge,
+    nodePenaltyGauge,
+    nodeObservedBlockHeightGauge
+} from '../integrations/Prometheus.js'
 
 export class Chainflip extends Polkadot {
     private GRAPHQL_PROCESSOR_ENDPOINT = 'https://processor-perseverance.chainflip.io/graphql'
@@ -21,7 +35,7 @@ export class Chainflip extends Polkadot {
     }
 
     async initHeartbeats() {
-        await betterStack.initHeartbeats(Chainflip.name, [
+        await betterStack?.initHeartbeats(Chainflip.name, [
             HeartbeatType.HEALTH,
             HeartbeatType.VERSION
         ])
@@ -40,14 +54,13 @@ export class Chainflip extends Polkadot {
             return false
         }
 
-        const isOnline = nodeResponse.data.result.is_online
-        if (!isOnline) {
+        if (nodeResponse.data.result.is_online === false) {
             await log.error(`${Chainflip.name}:${this.isUp.name}: Node is not online!`)
             return false
         }
 
         await log.info(`${Chainflip.name}: Node is up!`)
-        await betterStack.sendHeartbeat(Chainflip.name, HeartbeatType.HEALTH)
+        await betterStack?.sendHeartbeat(Chainflip.name, HeartbeatType.HEALTH)
 
         return await super.isUp()
     }
@@ -94,8 +107,11 @@ export class Chainflip extends Polkadot {
             return
         }
 
+        // Track metric
+        chainflipVersionGauge.labels(nodeVersion).set(1)
+
         await log.info(`${Chainflip.name}: Node version is up-to-date!`)
-        await betterStack.sendHeartbeat(Chainflip.name, HeartbeatType.VERSION)
+        await betterStack?.sendHeartbeat(Chainflip.name, HeartbeatType.VERSION)
     }
 
     async monitorBond() {
@@ -136,6 +152,11 @@ export class Chainflip extends Polkadot {
         const bond = node.bond
         const reward = node.reward
         const minActiveBond = Number(latestAuctionResponse.data.data.auction.minActiveBid) / 1e18
+
+        // Track metrics
+        nodeBondGauge.set(bond)
+        nodeRewardGauge.set(reward)
+        networkMinActiveBondGauge.set(minActiveBond)
 
         await log.info(`${Chainflip.name}:Bond: bond = ${Math.round(bond)}; reward = ${Math.round(reward)}; minActiveBond = ${Math.round(minActiveBond)}`)
     }
@@ -185,11 +206,19 @@ export class Chainflip extends Polkadot {
 
         await log.info(`${Chainflip.name}:Reputation: node = ${Math.round(node.reputation)}; network = ${Math.round(best)} (best), ${Math.round(median)} (median), ${Math.round(average)} (average), ${Math.round(worstTop10Threshold)} (worstTop10Threshold), ${Math.round(worst)} (worst)`)
 
+        // Track metrics
+        nodeReputationGauge.set(node.reputation)
+        networkReputationBestGauge.set(best)
+        networkReputationMedianGauge.set(median)
+        networkReputationAverageGauge.set(average)
+        networkReputationWorstTop10ThresholdGauge.set(worstTop10Threshold)
+        networkReputationWorstGauge.set(worst)
+
         // Alert if node enters the worst-top-10
         if (node.reputation < worstTop10Threshold) {
-            await betterStack.createReputationIncident(Chainflip.name, node.reputation, worstTop10Threshold)
+            await betterStack?.createReputationIncident(Chainflip.name, node.reputation, worstTop10Threshold)
         } else {
-            await betterStack.resolveIncidents(Chainflip.name, IncidentType.REPUTATION)
+            await betterStack?.resolveIncidents(Chainflip.name, IncidentType.REPUTATION)
         }
     }
 
@@ -229,11 +258,18 @@ export class Chainflip extends Polkadot {
         const penaltyAmount = _.reduce(penalties, (total, penalty) => total + penalty.amount, 0)
         const reasons = _.uniq(_.map(penalties, (penalty) => penalty.reason))
 
+        // Track metric
+        for (const reason of reasons) {
+            const penaltiesForReason = _.filter(penalties, (penalty) => penalty.reason === reason)
+            const totalPenaltyAmountForReason = _.reduce(penaltiesForReason, (total, penalty) => total + penalty.amount, 0)
+            nodePenaltyGauge.labels(reason).set(totalPenaltyAmountForReason)
+        }
+
         // Alert if node was penalized
         if (penaltyAmount > 0) {
-            await betterStack.createPenaltyIncident(Chainflip.name, penaltyAmount, reasons)
+            await betterStack?.createPenaltyIncident(Chainflip.name, penaltyAmount, reasons)
         } else {
-            await betterStack.resolveIncidents(Chainflip.name, IncidentType.PENALTY)
+            await betterStack?.resolveIncidents(Chainflip.name, IncidentType.PENALTY)
         }
     }
 
@@ -288,6 +324,9 @@ export class Chainflip extends Polkadot {
         // Log all the observed block heights for all chains
         for (const obversation of latestObservations) {
             await log.info(`${Chainflip.name}:${this.monitorChainObservations.name}: chain = ${obversation.chain}; blockHeight = ${obversation.blockHeight}`)
+
+            // Track metric
+            nodeObservedBlockHeightGauge.labels(obversation.chain).set(obversation.blockHeight)
         }
     }
 

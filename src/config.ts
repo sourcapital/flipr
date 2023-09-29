@@ -2,7 +2,7 @@ export const config = {
     nodeENV: process.env.NODE_ENV,
     betterStack: {
         uptime: {
-            apiKey: process.env.BETTERSTACK_API_KEY!
+            apiKey: process.env.BETTERSTACK_API_KEY
         },
         logs: {
             sourceToken: process.env.LOGS_SOURCE_TOKEN

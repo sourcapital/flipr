@@ -3,6 +3,10 @@ import {Node} from './Node.js'
 import {config} from '../config.js'
 import {safeAxiosPost} from '../helpers/Axios.js'
 import {HeartbeatType} from '../integrations/BetterStack.js'
+import {
+    nodeBlockHeightGauge,
+    apiBlockHeightGauge
+} from '../integrations/Prometheus.js'
 
 export enum Chain {
     Ethereum = 'ethereum'
@@ -21,7 +25,7 @@ export class Ethereum extends Node {
     }
 
     async initHeartbeats() {
-        await betterStack.initHeartbeats(getChainName(this.chain), [
+        await betterStack?.initHeartbeats(getChainName(this.chain), [
             HeartbeatType.HEALTH,
             HeartbeatType.SYNC_STATUS
         ])
@@ -38,7 +42,7 @@ export class Ethereum extends Node {
         }
 
         await log.info(`${getChainName(this.chain)}: Node is up!`)
-        await betterStack.sendHeartbeat(getChainName(this.chain), HeartbeatType.HEALTH)
+        await betterStack?.sendHeartbeat(getChainName(this.chain), HeartbeatType.HEALTH)
 
         return true
     }
@@ -86,6 +90,10 @@ export class Ethereum extends Node {
         const apiBlockHeight = Number(apiResponse?.data.result ?? -1)
         await log.info(`${getChainName(this.chain)}:${this.isSynced.name}: nodeBlockHeight = ${nodeBlockHeight}; apiBlockHeight = ${apiBlockHeight}`)
 
+        // Track metrics
+        nodeBlockHeightGauge.labels(getChainName(this.chain)).set(nodeBlockHeight)
+        apiBlockHeightGauge.labels(getChainName(this.chain)).set(apiBlockHeight)
+
         // Check if node is behind the api block height (1 block behind is ok due to network latency)
         if (nodeBlockHeight < apiBlockHeight - 1) {
             await log.warn(`${getChainName(this.chain)}:${this.isSynced.name}: nodeBlockHeight < apiBlockHeight: ${nodeBlockHeight} < ${apiBlockHeight}`)
@@ -93,7 +101,7 @@ export class Ethereum extends Node {
         }
 
         await log.info(`${getChainName(this.chain)}: Node is synced!`)
-        await betterStack.sendHeartbeat(getChainName(this.chain), HeartbeatType.SYNC_STATUS)
+        await betterStack?.sendHeartbeat(getChainName(this.chain), HeartbeatType.SYNC_STATUS)
 
         return true
     }
