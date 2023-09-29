@@ -64,13 +64,13 @@ spec:
             - name: CHAINFLIP_NODE_ADDRESS
               value: 'cFXXXX'
             - name: NODE_ENDPOINT_CHAINFLIP
-              value: 'XXXX'
+              value: 'http://chainflip.chainflip:9944'
             - name: NODE_ENDPOINT_BITCOIN
-              value: 'XXXX'
+              value: 'http://flip:flip@bitcoin.chainflip:8332'
             - name: NODE_ENDPOINT_ETHEREUM
-              value: 'XXXX'
+              value: 'http://ethereum.chainflip:8545'
             - name: NODE_ENDPOINT_POLKADOT
-              value: 'XXXX'
+              value: 'http://polkadot.chainflip:9944'
           ports:
             - containerPort: 3000
           resources:
