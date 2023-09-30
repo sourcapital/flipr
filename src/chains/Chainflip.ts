@@ -158,7 +158,7 @@ export class Chainflip extends Polkadot {
         nodeRewardGauge.set(reward)
         networkMinActiveBondGauge.set(minActiveBond)
 
-        await log.info(`${Chainflip.name}:Bond: bond = ${Math.round(bond)}; reward = ${Math.round(reward)}; minActiveBond = ${Math.round(minActiveBond)}`)
+        await log.info(`${Chainflip.name}:Bond: bond = ${bond}; reward = ${reward}; minActiveBond = ${minActiveBond}`)
     }
 
     async monitorReputation() {
@@ -204,7 +204,7 @@ export class Chainflip extends Polkadot {
         const mid = Math.floor(nodes.length / 2)
         const median = nodes.length % 2 === 0 ? (nodes[mid - 1].reputation + nodes[mid].reputation) / 2 : nodes[mid].reputation
 
-        await log.info(`${Chainflip.name}:Reputation: node = ${Math.round(node.reputation)}; network = ${Math.round(best)} (best), ${Math.round(median)} (median), ${Math.round(average)} (average), ${Math.round(worstTop10Threshold)} (worstTop10Threshold), ${Math.round(worst)} (worst)`)
+        await log.info(`${Chainflip.name}:Reputation: node = ${node.reputation}; network = ${best} (best), ${median} (median), ${average} (average), ${worstTop10Threshold} (worstTop10Threshold), ${worst} (worst)`)
 
         // Track metrics
         nodeReputationGauge.set(node.reputation)
