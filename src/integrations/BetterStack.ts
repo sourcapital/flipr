@@ -81,9 +81,11 @@ export class BetterStack {
 
         new Cron(schedule, async () => {
             const incidents = await global.betterStack!.getIncidents(undefined, true, false)
-            const incidentsToDelete = _.sortBy(incidents, (incident) => {
-                return incident.attributes.started_at
-            }).reverse().slice(100) // Get all incidents except the latest 100
+            const incidentsToDelete = _.sortBy(_.filter(incidents, (incident) => {
+                return incident.attributes.name.includes(config.chainflipNodeAddress!.slice(-4)) // Include incidents from this node only
+            }),(incident) => {
+                return incident.attributes.started_at // Sort by bond (descending)
+            }).reverse().slice(50)
 
             for (const incident of incidentsToDelete) {
                 await this.deleteIncident(incident.id)
@@ -395,7 +397,6 @@ export class BetterStack {
                     await log.error(`${BetterStack.name}:${this.send.name}: HTTP status code: ${response.status}`)
                 }
             } catch (error) {
-                await handleError(error)
                 await sleep(100)
             }
         }
