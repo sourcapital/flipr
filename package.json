@@ -23,7 +23,7 @@
     "@types/numeral": "^2.0.2",
     "@types/underscore": "^1.11.5",
     "@types/ws": "^8.5.5",
-    "axios": "^1.4.0",
+    "axios": "^1.6.0",
     "cron": "^2.4.3",
     "express": "^4.18.2",
     "moment": "^2.29.4",
