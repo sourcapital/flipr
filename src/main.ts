@@ -40,9 +40,9 @@ if (global.betterStack) {
     await global.betterStack.setupCleanup('0 0 * * * *')
 }
 
-// Run basic node health monitoring every minute
+// Run basic node health monitoring every 5 minutes
 await log.info('Setup chain daemon monitoring ...')
-new Cron('0 * * * * *', async () => {
+new Cron('0 */5 * * * *', async () => {
     await Promise.all(_.flatten(_.map(nodes, (node) => {
         return [
             node.isUp(),
@@ -51,9 +51,9 @@ new Cron('0 * * * * *', async () => {
     })))
 }).run()
 
-// Run Chainflip node specific monitoring every minute
+// Run Chainflip node specific monitoring every 5 minutes
 await log.info('Setup Chainflip node monitoring ...')
-new Cron('0 * * * * *', async () => {
+new Cron('0 */5 * * * *', async () => {
     const chainflip = _.find(nodes, (node) => {
         return node.constructor.name === Chainflip.name
     }) as Chainflip
