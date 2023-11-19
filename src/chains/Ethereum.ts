@@ -53,7 +53,7 @@ export class Ethereum extends Node {
         let apiUrl: string
         switch (this.chain) {
             case Chain.Ethereum:
-                apiUrl = config.nodeEndpoint.ethereum // TODO: Use proper api to cross-check upon mainnet release
+                apiUrl = 'https://rpc.mevblocker.io'
                 break
         }
 

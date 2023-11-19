@@ -53,7 +53,7 @@ export class Bitcoin extends Node {
         // Await all time critical request together to minimize any delay (e.g. difference in block height)
         const [nodeResponse, apiResponse] = await Promise.all([
             this.query('getblockchaininfo'),
-            this.query('getblockchaininfo', config.nodeEndpoint.bitcoin), // TODO: Use proper api to cross-check upon mainnet release
+            this.query('getblockchaininfo', 'https://thorchain:password@bitcoin.ninerealms.com'),
         ])
 
         if (nodeResponse?.status !== 200) {

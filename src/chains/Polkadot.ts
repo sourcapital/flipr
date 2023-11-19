@@ -54,7 +54,7 @@ export class Polkadot extends Node {
         let apiUrl: string
         switch (this.chain) {
             case Chain.Polkadot:
-                apiUrl = config.nodeEndpoint.polkadot // TODO: Use proper api to cross-check upon mainnet release
+                apiUrl = 'https://rpc.polkadot.io'
                 break
             case Chain.Substrate:
                 apiUrl = config.nodeEndpoint.chainflip // TODO: Use proper api to cross-check upon mainnet release
