@@ -27,8 +27,8 @@ import {
 } from '../integrations/Prometheus.js'
 
 export class Chainflip extends Polkadot {
-    private GRAPHQL_PROCESSOR_ENDPOINT = 'https://processor-perseverance.chainflip.io/graphql'
-    private GRAPHQL_CACHE_ENDPOINT = 'https://chainflip-cache-perseverance.chainflip.io/graphql'
+    private GRAPHQL_PROCESSOR_ENDPOINT = 'https://explorer-service-processor.chainflip.io/graphql'
+    private GRAPHQL_CACHE_ENDPOINT = 'https://cache-service.chainflip.io/graphql'
 
     constructor(url: string) {
         super(url, Chain.Substrate)
