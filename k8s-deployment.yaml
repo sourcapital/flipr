@@ -52,7 +52,7 @@ spec:
       serviceAccountName: flipr
       containers:
         - name: flipr
-          image: sourcap/flipr:release-1.0.0@sha256:1ad31c38ba498e7891744a4219046f21b5f68da16dda273be3bf1e573a184984
+          image: sourcap/flipr:release-1.0.1@sha256:1632fc640754a58e3cb56008674a0b4c8eb39d9b3de34f49df1e1f783af25b35
           imagePullPolicy: IfNotPresent
           env:
             - name: NODE_ENV
@@ -86,12 +86,12 @@ spec:
               port: 3000
             initialDelaySeconds: 30
             timeoutSeconds: 5
-            readinessProbe:
-              httpGet:
-                path: /healthz
-                port: 3000
-              initialDelaySeconds: 5
-              timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
 ---
 # This Service exposes the flipr application on port 80 and routes traffic to the pods' port 3000.
 apiVersion: v1
