@@ -40,9 +40,9 @@ if (global.betterStack) {
     await global.betterStack.setupCleanup('0 0 * * * *')
 }
 
-// Run basic node health monitoring every 5 minutes
+// Run basic node health monitoring every 3 minutes
 await log.info('Setup chain daemon monitoring ...')
-new Cron('0 */5 * * * *', async () => {
+new Cron('0 */3 * * * *', async () => {
     // Delay by 0-30 seconds to reduce burst stress on RPCs
     await sleep(Math.floor(Math.random() * (30 - 1)) * 1000)
 
@@ -54,9 +54,9 @@ new Cron('0 */5 * * * *', async () => {
     })))
 }).run()
 
-// Run Chainflip node specific monitoring every 5 minutes
+// Run Chainflip node specific monitoring every 3 minutes
 await log.info('Setup Chainflip node monitoring ...')
-new Cron('0 */5 * * * *', async () => {
+new Cron('0 */3 * * * *', async () => {
     const chainflip = _.find(nodes, (node) => {
         return node.constructor.name === Chainflip.name
     }) as Chainflip
