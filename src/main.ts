@@ -43,6 +43,9 @@ if (global.betterStack) {
 // Run basic node health monitoring every 5 minutes
 await log.info('Setup chain daemon monitoring ...')
 new Cron('0 */5 * * * *', async () => {
+    // Delay by 0-30 seconds to reduce burst stress on RPCs
+    await sleep(Math.floor(Math.random() * (30 - 1)) * 1000)
+
     await Promise.all(_.flatten(_.map(nodes, (node) => {
         return [
             node.isUp(),
