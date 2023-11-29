@@ -241,3 +241,37 @@ fragment Extrinsic on Extrinsic {
   __typename
 }
 `
+
+export const getValidators = `
+query Validators {
+  validators: allValidators {
+    nodes {
+      ...CacheValidator
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment CacheValidator on Validator {
+  idHex
+  idSs58
+  alias
+  apyBp
+  boundRedeemAddress
+  processorId
+  totalRewards
+  isCurrentAuthority
+  isCurrentBackup
+  isQualified
+  isOnline
+  isBidding
+  isKeyholder
+  reputationPoints
+  lockedBalance
+  unlockedBalance
+  firstFundingTimestamp
+  latestFundingTimestamp
+  __typename
+}
+`

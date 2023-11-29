@@ -5,6 +5,7 @@ import {config} from './config.js'
 import {Log} from './helpers/Log.js'
 import {Cron} from './helpers/Cron.js'
 import {BetterStack} from './integrations/BetterStack.js'
+import {Node} from './chains/Node.js'
 import {Bitcoin} from './chains/Bitcoin.js'
 import {Ethereum} from './chains/Ethereum.js'
 import {Polkadot} from './chains/Polkadot.js'
@@ -21,12 +22,12 @@ if (config.betterStack.uptime.apiKey) {
 }
 
 // Init nodes
-const nodes = [
-    new Chainflip(config.nodeEndpoint.chainflip),
-    new Bitcoin(config.nodeEndpoint.bitcoin),
-    new Ethereum(config.nodeEndpoint.ethereum),
-    new Polkadot(config.nodeEndpoint.polkadot)
+const nodes: Node[] = [
+    new Chainflip(config.nodeEndpoint.chainflip)
 ]
+if (config.nodeEndpoint.bitcoin) nodes.push(new Bitcoin(config.nodeEndpoint.bitcoin))
+if (config.nodeEndpoint.ethereum) nodes.push(new Ethereum(config.nodeEndpoint.ethereum))
+if (config.nodeEndpoint.polkadot) nodes.push(new Polkadot(config.nodeEndpoint.polkadot))
 
 // Only do BetterStack stuff if it's enabled
 if (global.betterStack) {
@@ -40,12 +41,9 @@ if (global.betterStack) {
     await global.betterStack.setupCleanup('0 0 * * * *')
 }
 
-// Run basic node health monitoring every 3 minutes
+// Run basic node health monitoring
 await log.info('Setup chain daemon monitoring ...')
-new Cron('0 */3 * * * *', async () => {
-    // Delay by 0-30 seconds to reduce burst stress on RPCs
-    await sleep(Math.floor(Math.random() * (30 - 1)) * 1000)
-
+new Cron(config.cron_schedule ?? '0 */3 * * * *', async () => {
     await Promise.all(_.flatten(_.map(nodes, (node) => {
         return [
             node.isUp(),
@@ -54,15 +52,16 @@ new Cron('0 */3 * * * *', async () => {
     })))
 }).run()
 
-// Run Chainflip node specific monitoring every 3 minutes
+// Run Chainflip node specific monitoring
 await log.info('Setup Chainflip node monitoring ...')
-new Cron('0 */3 * * * *', async () => {
+new Cron(config.cron_schedule ?? '0 */3 * * * *', async () => {
     const chainflip = _.find(nodes, (node) => {
         return node.constructor.name === Chainflip.name
     }) as Chainflip
 
     await Promise.all([
         chainflip.monitorVersion(),
+        chainflip.monitorStates(),
         chainflip.monitorBond(),
         chainflip.monitorReputation(),
         chainflip.monitorPenalties(),

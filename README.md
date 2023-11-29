@@ -27,11 +27,14 @@ A monitoring application for Chainflip nodes.
 | NODE_ENV                | No       | Set to `production`, if you want to run the application in production.                                           |
 | BETTERSTACK_API_KEY     | No       | BetterStack API key, see [here](#betterstack-optional).                                                          |
 | LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs-optional).                                                       |
+| CRON_SCHEDULE           | No       | Cron schedule to adjust how often the nodes are monitored (e.g. `0 */3 * * * *` for every 3min).                 |
 | CHAINFLIP_NODE_ADDRESS  | Yes      | Public SS58 address of your Chainflip node (`cF...`).                                                            |
 | NODE_ENDPOINT_CHAINFLIP | Yes      | Chainflip node endpoint (e.g. http://chainflip.chainflip:9944).                                                  |
-| NODE_ENDPOINT_BITCOIN   | Yes      | Bitcoin node endpoint (e.g. [http://flip:flip@bitcoin.chainflip:8332](http://flip:flip@bitcoin.chainflip:8332)). |
-| NODE_ENDPOINT_ETHEREUM  | Yes      | Ethereum node endpoint (e.g. http://ethereum.chainflip:8545).                                                    |
-| NODE_ENDPOINT_POLKADOT  | Yes      | Polkadot node endpoint (e.g. http://polkadot.chainflip:9944).                                                    |
+| NODE_ENDPOINT_BITCOIN   | No       | Bitcoin node endpoint (e.g. [http://flip:flip@bitcoin.chainflip:8332](http://flip:flip@bitcoin.chainflip:8332)). |
+| NODE_ENDPOINT_ETHEREUM  | No       | Ethereum node endpoint (e.g. http://ethereum.chainflip:8545).                                                    |
+| NODE_ENDPOINT_POLKADOT  | No       | Polkadot node endpoint (e.g. http://polkadot.chainflip:9944).                                                    |
+
+If you want to skip the monitoring of a non-required node endpoint, simply remove the specific environment variable (e.g. `NODE_ENDPOINT_BITCOIN`).
 
 ## Kubernetes
 
@@ -102,13 +105,14 @@ RestartSec=10
 Environment="NODE_ENV=production"
 Environment="BETTERSTACK_API_KEY=XXX"
 Environment="LOGS_SOURCE_TOKEN=XXX"
+Environment="CRON_SCHEDULE=0 */3 * * * *"
 Environment="CHAINFLIP_NODE_ADDRESS=cFXXX"
 Environment="NODE_ENDPOINT_CHAINFLIP=http://localhost:9944"
 Environment="NODE_ENDPOINT_BITCOIN=XXX"
 Environment="NODE_ENDPOINT_ETHEREUM=XXX"
 Environment="NODE_ENDPOINT_POLKADOT=XXX"
 
-ExecStart=<NODE_INSTALLATION_PATH> <DIRECTORY_PATH>/dist/main.js
+ExecStart=NODE_INSTALLATION_PATH DIRECTORY_PATH/dist/main.js
 
 [Install]
 WantedBy=multi-user.target
@@ -116,8 +120,8 @@ WantedBy=multi-user.target
 
 Set all required environment variables and replace:
 
-- `<NODE_INSTALLATION_PATH>`: Path to your `node` binary
-- `<DIRECTORY_PATH>`: Path to the this project directory
+- `NODE_INSTALLATION_PATH`: Path to your `node` binary
+- `DIRECTORY_PATH`: Path to the this project directory
 
 #### Set Environment Variables
 

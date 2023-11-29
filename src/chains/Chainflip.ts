@@ -9,26 +9,26 @@ import {
     getActiveCacheValidators,
     paginatedPenaltiesQuery,
     getValidatorLatestBlockInfo,
-    getExtrinsicsByValidator
+    getExtrinsicsByValidator,
+    getValidators
 } from '../helpers/GraphQL.js'
 import {
     chainflipVersionGauge,
+    nodeStateGauge,
     nodeBondGauge,
     nodeRewardGauge,
-    networkMinActiveBondGauge,
+    networkMinActiveBidGauge,
     nodeReputationGauge,
-    networkReputationBestGauge,
-    networkReputationMedianGauge,
-    networkReputationAverageGauge,
-    networkReputationWorstTop10ThresholdGauge,
-    networkReputationWorstGauge,
+    networkReputationGauge,
     nodePenaltyGauge,
-    nodeObservedBlockHeightGauge
+    nodeObservedBlockHeightGauge,
 } from '../integrations/Prometheus.js'
 
 export class Chainflip extends Polkadot {
     private GRAPHQL_PROCESSOR_ENDPOINT = 'https://explorer-service-processor.chainflip.io/graphql'
     private GRAPHQL_CACHE_ENDPOINT = 'https://cache-service.chainflip.io/graphql'
+
+    private lastBlockMonitoredForPenalties = 0
 
     constructor(url: string) {
         super(url, Chain.Substrate)
@@ -45,16 +45,16 @@ export class Chainflip extends Polkadot {
     async isUp(): Promise<boolean> {
         await log.debug(`${Chainflip.name}: Checking if the node is up ...`)
 
-        const nodeResponse = await super.query('cf_account_info_v2', undefined, {
+        const response = await super.query('cf_account_info_v2', undefined, {
             'account_id': this.getNodeAddress()
         })
 
-        if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.isUp.name}: Node HTTP status code: ${nodeResponse?.status}`)
+        if (response?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.isUp.name}: Node HTTP status code: ${response?.status}`)
             return false
         }
 
-        if (nodeResponse.data.result.is_online === false) {
+        if (response.data.result.is_online === false) {
             await log.error(`${Chainflip.name}:${this.isUp.name}: Node is not online!`)
             return false
         }
@@ -68,22 +68,21 @@ export class Chainflip extends Polkadot {
     async monitorVersion() {
         await log.debug(`${Chainflip.name}: Checking if node version is up-to-date ...`)
 
-        const nodeResponse = await this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo)
+        const response = await this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo)
 
-        if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorVersion.name}: HTTP status code: ${nodeResponse?.status}`)
+        if (response?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorVersion.name}: HTTP status code: ${response?.status}`)
             return
         }
 
-        const nodeAddress = this.getNodeAddress()
-        const nodes = nodeResponse.data.data.epoch.nodes['0'].memberships.nodes
+        const authorities = response.data.data.epoch.nodes['0'].memberships.nodes
 
-        const node = _.find(nodes, (node) => {
-            return node.validator.idSs58 === nodeAddress
+        const node = _.find(authorities, (node) => {
+            return node.validator.idSs58 === this.getNodeAddress()
         })
 
         if (!node) {
-            await log.info(`${Chainflip.name}:${this.monitorVersion.name}: Node '${nodeAddress}' not bonded!`)
+            await log.info(`${Chainflip.name}:${this.monitorVersion.name}: Node '${this.getNodeAddress()}' is not an authority. Skip version monitoring ...`)
             return
         }
 
@@ -91,7 +90,7 @@ export class Chainflip extends Polkadot {
         const nodeVersion = node.validator.cfeVersion
 
         // Get the top version of the active nodes
-        const topVersion = _.max(_.map(nodes, (node) => {
+        const topVersion = _.max(_.map(authorities, (node) => {
             return node.validator.cfeVersion
         }), (version) => {
             return Number(version.replace(/\./g, ''))
@@ -102,78 +101,164 @@ export class Chainflip extends Polkadot {
         const nodeVersionAsNumber = Number(/([0-9]+)\.([0-9]+)\.([0-9]+)/g.exec(nodeVersion)!.slice(1, 4).join(''))
         const topVersionAsNumber = Number(/([0-9]+)\.([0-9]+)\.([0-9]+)/g.exec(topVersion)!.slice(1, 4).join(''))
 
+        // Track metric
+        chainflipVersionGauge.reset()
+        chainflipVersionGauge.labels(nodeVersion).set(1)
+
         if (nodeVersionAsNumber < topVersionAsNumber) {
             await log.warn(`${Chainflip.name}:${this.monitorVersion.name}: nodeVersion < topVersion: '${nodeVersion}' < '${topVersion}'`)
             return
         }
 
-        // Track metric
-        chainflipVersionGauge.labels(nodeVersion).set(1)
-
         await log.info(`${Chainflip.name}: Node version is up-to-date!`)
         await global.betterStack?.sendHeartbeat(Chainflip.name, HeartbeatType.VERSION)
+    }
+
+    async monitorStates() {
+        await log.debug(`${Chainflip.name}: Monitor node state ...`)
+
+        const resetMetrics = () => {
+            nodeStateGauge.labels('authority').set(0)
+            nodeStateGauge.labels('backup').set(0)
+            nodeStateGauge.labels('qualified').set(0)
+            nodeStateGauge.labels('online').set(0)
+            nodeStateGauge.labels('bidding').set(0)
+            nodeStateGauge.labels('keyholder').set(0)
+        }
+
+        const response = await this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getActiveCacheValidators)
+
+        if (response?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorStates.name}: Node HTTP status code: ${response?.status}`)
+            resetMetrics()
+            return
+        }
+
+        const node = _.find(response.data.data.validators.nodes, (node) => {
+            return node.idSs58 === this.getNodeAddress()
+        })
+
+        if (!node) {
+            await log.warn(`${Chainflip.name}:${this.monitorStates.name}: Node is not registered. Skip state monitoring ...`)
+            resetMetrics()
+            return
+        }
+
+        // Get node states
+        const isAuthority = Number(node.isCurrentAuthority)
+        const isBackup = Number(node.isCurrentBackup)
+        const isQualified = Number(node.isQualified)
+        const isOnline = Number(node.isOnline)
+        const isBidding = Number(node.isBidding)
+        const isKeyholder = Number(node.isKeyholder)
+
+        // Track metrics
+        nodeStateGauge.labels('authority').set(isAuthority)
+        nodeStateGauge.labels('backup').set(isBackup)
+        nodeStateGauge.labels('qualified').set(isQualified)
+        nodeStateGauge.labels('online').set(isOnline)
+        nodeStateGauge.labels('bidding').set(isBidding)
+        nodeStateGauge.labels('keyholder').set(isKeyholder)
+
+        await log.info(`${Chainflip.name}:State: authority = ${isAuthority}; backup = ${isBackup}; qualified = ${isQualified}; online = ${isOnline}; bidding = ${isBidding}; keyholder = ${isKeyholder}`)
     }
 
     async monitorBond() {
         await log.debug(`${Chainflip.name}: Monitoring bond ...`)
 
-        const [nodeResponse, latestAuctionResponse] = await Promise.all([
-            this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo),
-            this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getLatestAuction)
+        const resetMetrics = () => {
+            nodeBondGauge.labels('lockedBond').set(0)
+            nodeBondGauge.labels('unlockedBond').set(0)
+            nodeBondGauge.labels('totalBond').set(0)
+            nodeRewardGauge.labels('epochRewards').set(0)
+            nodeRewardGauge.labels('totalRewards').set(0)
+            networkMinActiveBidGauge.set(0)
+        }
+
+        const [validatorResponse, auctionResponse, authorityResponse] = await Promise.all([
+            this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getValidators),
+            this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getLatestAuction),
+            this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo)
         ])
 
-        if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorBond.name}:getActiveAuthorityInfo: HTTP status code: ${nodeResponse?.status}`)
+        if (validatorResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorBond.name}:getValidators: HTTP status code: ${validatorResponse?.status}`)
+            resetMetrics()
             return
         }
-        if (latestAuctionResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorBond.name}:getLatestAuction: HTTP status code: ${latestAuctionResponse?.status}`)
+        if (auctionResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorBond.name}:getLatestAuction: HTTP status code: ${auctionResponse?.status}`)
+            resetMetrics()
+            return
+        }
+        if (authorityResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorBond.name}:getActiveAuthorityInfo: HTTP status code: ${authorityResponse?.status}`)
+            resetMetrics()
             return
         }
 
-        const nodeAddress = this.getNodeAddress()
-        const nodes = nodeResponse.data.data.epoch.nodes['0'].memberships.nodes
-
-        const node = _.find(_.map(nodes, (node) => {
+        const node = _.find(_.map(validatorResponse.data.data.validators.nodes, (node) => {
             return { // Map relevant values
-                address: node.validator.idSs58,
-                bond: Number(node.bid) / 1e18,
-                reward: Number(node.reward) / 1e18
+                address: node.idSs58,
+                lockedBalance: Number(node.lockedBalance) / 1e18,
+                unlockedBalance: Number(node.unlockedBalance) / 1e18,
+                totalRewards: Number(node.totalRewards) / 1e18
             }
         }), (node) => {
-            return node.address === nodeAddress // Find node by address
+            return node.address === this.getNodeAddress() // Find node by address
         })
 
         if (!node) {
-            await log.warn(`${Chainflip.name}:${this.monitorBond.name}: Node '${nodeAddress}' not bonded!`)
+            await log.warn(`${Chainflip.name}:${this.monitorBond.name}: Node '${this.getNodeAddress()}' not registered. Skip bond monitoring ...`)
+            resetMetrics()
             return
         }
 
-        const bond = node.bond
-        const reward = node.reward
-        const minActiveBond = Number(latestAuctionResponse.data.data.auction.minActiveBid) / 1e18
+        const authorities = authorityResponse.data.data.epoch.nodes['0'].memberships.nodes
+
+        const authority = _.find(authorities, (node) => {
+            return node.validator.idSs58 === this.getNodeAddress()
+        })
+
+        const lockedBond = node.lockedBalance
+        const unlockedBond = node.unlockedBalance
+        const totalBond = lockedBond + unlockedBond
+        const epochRewards = Number((authority?.reward ?? 0) / 1e18)
+        const totalRewards = node.totalRewards
+        const minActiveBid = Number(auctionResponse.data.data.auction.minActiveBid) / 1e18
 
         // Track metrics
-        nodeBondGauge.set(bond)
-        nodeRewardGauge.set(reward)
-        networkMinActiveBondGauge.set(minActiveBond)
+        nodeBondGauge.labels('lockedBond').set(lockedBond)
+        nodeBondGauge.labels('unlockedBond').set(unlockedBond)
+        nodeBondGauge.labels('totalBond').set(totalBond)
+        nodeRewardGauge.labels('epochRewards').set(epochRewards)
+        nodeRewardGauge.labels('totalRewards').set(totalRewards)
+        networkMinActiveBidGauge.set(minActiveBid)
 
-        await log.info(`${Chainflip.name}:Bond: bond = ${bond}; reward = ${reward}; minActiveBond = ${minActiveBond}`)
+        await log.info(`${Chainflip.name}:Bond: lockedBond = ${lockedBond}; unlockedBond = ${unlockedBond}; totalBond = ${totalBond}; epochRewards = ${epochRewards}; totalRewards = ${totalRewards}; minActiveBid = ${minActiveBid}`)
     }
 
     async monitorReputation() {
         await log.debug(`${Chainflip.name}: Monitoring reputation ...`)
 
-        const nodeResponse = await this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getActiveCacheValidators)
+        const resetMetrics = () => {
+            nodeReputationGauge.set(0)
+            networkReputationGauge.labels('best').set(0)
+            networkReputationGauge.labels('median').set(0)
+            networkReputationGauge.labels('average').set(0)
+            networkReputationGauge.labels('worstTop10Threshold').set(0)
+            networkReputationGauge.labels('worst').set(0)
+        }
 
-        if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorReputation.name}: Node HTTP status code: ${nodeResponse?.status}`)
+        const response = await this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getValidators)
+
+        if (response?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorReputation.name}: Node HTTP status code: ${response?.status}`)
+            resetMetrics()
             return
         }
 
-        const nodes = _.sortBy(_.map(_.filter(nodeResponse.data.data.validators.nodes, (node) => {
-            return node.isCurrentAuthority === true // Include active nodes only
-        }), (node) => {
+        const nodes = _.sortBy(_.map(response.data.data.validators.nodes, (node) => {
             return { // Map relevant values
                 address: node.idSs58,
                 reputation: Number(node.reputationPoints)
@@ -187,7 +272,8 @@ export class Chainflip extends Polkadot {
         })
 
         if (!node) {
-            await log.warn(`${Chainflip.name}:${this.monitorReputation.name}: Node is not active. Skipping reputation monitoring ...`)
+            await log.warn(`${Chainflip.name}:${this.monitorReputation.name}: Node is not registered. Skip reputation monitoring ...`)
+            resetMetrics()
             return
         }
 
@@ -206,13 +292,13 @@ export class Chainflip extends Polkadot {
 
         await log.info(`${Chainflip.name}:Reputation: node = ${node.reputation}; network = ${best} (best), ${median} (median), ${average} (average), ${worstTop10Threshold} (worstTop10Threshold), ${worst} (worst)`)
 
-        // Track metrics
+        // Track metric
         nodeReputationGauge.set(node.reputation)
-        networkReputationBestGauge.set(best)
-        networkReputationMedianGauge.set(median)
-        networkReputationAverageGauge.set(average)
-        networkReputationWorstTop10ThresholdGauge.set(worstTop10Threshold)
-        networkReputationWorstGauge.set(worst)
+        networkReputationGauge.labels('best').set(best)
+        networkReputationGauge.labels('median').set(median)
+        networkReputationGauge.labels('average').set(average)
+        networkReputationGauge.labels('worstTop10Threshold').set(worstTop10Threshold)
+        networkReputationGauge.labels('worst').set(worst)
 
         // Alert if node enters the worst-top-10
         if (node.reputation < worstTop10Threshold) {
@@ -225,6 +311,8 @@ export class Chainflip extends Polkadot {
     async monitorPenalties() {
         await log.debug(`${Chainflip.name}: Checking if node has been penalized ...`)
 
+        nodePenaltyGauge.reset()
+
         const syncStateResponse = await super.query('system_syncState')
 
         if (syncStateResponse?.status !== 200) {
@@ -233,9 +321,10 @@ export class Chainflip extends Polkadot {
         }
 
         const currentBlock = syncStateResponse.data.result.currentBlock
+
         const penaltiesResponse = await this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, paginatedPenaltiesQuery, {
             first: 1000,
-            startBlockId: currentBlock - 10 // Get penalties since the last run (= 1min ago at 6s block time)
+            startBlockId: Math.min(currentBlock - this.lastBlockMonitoredForPenalties, 100) // Get penalties since the last run (default to last 100 blocks ~ 10mins)
         })
 
         if (penaltiesResponse?.status !== 200) {
@@ -258,12 +347,15 @@ export class Chainflip extends Polkadot {
         const penaltyAmount = _.reduce(penalties, (total, penalty) => total + penalty.amount, 0)
         const reasons = _.uniq(_.map(penalties, (penalty) => penalty.reason))
 
-        // Track metric
+        // Track metrics
         for (const reason of reasons) {
             const penaltiesForReason = _.filter(penalties, (penalty) => penalty.reason === reason)
             const totalPenaltyAmountForReason = _.reduce(penaltiesForReason, (total, penalty) => total + penalty.amount, 0)
             nodePenaltyGauge.labels(reason).set(totalPenaltyAmountForReason)
         }
+
+        // Remember last monitored block height
+        this.lastBlockMonitoredForPenalties = currentBlock
 
         // Alert if node was penalized
         if (penaltyAmount > 0) {
@@ -276,7 +368,13 @@ export class Chainflip extends Polkadot {
     async monitorChainObservations() {
         await log.debug(`${Chainflip.name}: Monitoring chain observations ...`)
 
-        const [syncStateResponse, nodeResponse] = await Promise.all([
+        const resetMetrics = () => {
+            nodeObservedBlockHeightGauge.labels('Bitcoin').set(0)
+            nodeObservedBlockHeightGauge.labels('Ethereum').set(0)
+            nodeObservedBlockHeightGauge.labels('Polkadot').set(0)
+        }
+
+        const [syncStateResponse, latestBlockInfoResponse] = await Promise.all([
             super.query('system_syncState'),
             this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getValidatorLatestBlockInfo, {
                 'idSs58': this.getNodeAddress()
@@ -285,29 +383,32 @@ export class Chainflip extends Polkadot {
 
         if (syncStateResponse?.status !== 200) {
             await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:system_syncState: HTTP status code: ${syncStateResponse?.status}`)
+            resetMetrics()
             return
         }
-        if (nodeResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getValidatorLatestBlockInfo: HTTP status code: ${nodeResponse?.status}`)
+        if (latestBlockInfoResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getValidatorLatestBlockInfo: HTTP status code: ${latestBlockInfoResponse?.status}`)
+            resetMetrics()
             return
         }
 
-        const validatorId = nodeResponse.data.data.validators.nodes[0].id
+        const validatorId = latestBlockInfoResponse.data.data.validators.nodes[0].id
         const currentBlock = syncStateResponse.data.result.currentBlock
         const extrinsicsResponse = await this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getExtrinsicsByValidator, {
             validatorId: validatorId,
             first: 1000,
-            minBlock: currentBlock - 600, // Get extrinsics for the last hour (at 6s block time) in order to include weirdly long Bitcoin block times
+            minBlock: currentBlock - 600, // Get extrinsics for the last ~60min (at 6s block time) to include very long Bitcoin block times
             maxBlock: currentBlock
         })
 
         if (extrinsicsResponse?.status !== 200) {
             await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getExtrinsicsByValidator: Node HTTP status code: ${extrinsicsResponse?.status}`)
+            resetMetrics()
             return
         }
 
         const witnessTxs = _.map(_.filter(extrinsicsResponse.data.data.extrinsics.nodes, (extrinsic) => {
-            return extrinsic.args?.call?.__kind?.endsWith('ChainTracking') && extrinsic.success === true
+            return extrinsic.args?.call?.__kind?.endsWith('ChainTracking')
         }), (extrinsic) => {
             return { // Map relevant values
                 chain: /([a-zA-Z]+)ChainTracking/g.exec(extrinsic.args.call.__kind)![1],

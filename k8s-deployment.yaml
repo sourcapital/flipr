@@ -61,6 +61,8 @@ spec:
               value: 'XXX'
             - name: LOGS_SOURCE_TOKEN
               value: 'XXX'
+            - name: CRON_SCHEDULE
+              value: '0 */3 * * * *'
             - name: CHAINFLIP_NODE_ADDRESS
               value: 'cFXXX'
             - name: NODE_ENDPOINT_CHAINFLIP
