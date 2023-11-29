@@ -72,22 +72,13 @@ export class Chainflip extends Polkadot {
 
         if (response?.status !== 200) {
             await log.error(`${Chainflip.name}:${this.monitorVersion.name}: HTTP status code: ${response?.status}`)
+            chainflipVersionGauge.reset()
+            chainflipVersionGauge.labels('node', '0.0.0').set(0)
+            chainflipVersionGauge.labels('network', '0.0.0').set(0)
             return
         }
 
         const authorities = response.data.data.epoch.nodes['0'].memberships.nodes
-
-        const node = _.find(authorities, (node) => {
-            return node.validator.idSs58 === this.getNodeAddress()
-        })
-
-        if (!node) {
-            await log.info(`${Chainflip.name}:${this.monitorVersion.name}: Node '${this.getNodeAddress()}' is not an authority. Skip version monitoring ...`)
-            return
-        }
-
-        // Get the node's version
-        const nodeVersion = node.validator.cfeVersion
 
         // Get the top version of the active nodes
         const topVersion = _.max(_.map(authorities, (node) => {
@@ -97,13 +88,29 @@ export class Chainflip extends Polkadot {
         })
         await log.debug(`${Chainflip.name}:${this.monitorVersion.name}: topVersion = ${topVersion}`)
 
+        const node = _.find(authorities, (node) => {
+            return node.validator.idSs58 === this.getNodeAddress()
+        })
+
+        if (!node) {
+            await log.info(`${Chainflip.name}:${this.monitorVersion.name}: Node '${this.getNodeAddress()}' is not an authority. Skip version monitoring ...`)
+            chainflipVersionGauge.reset()
+            chainflipVersionGauge.labels('node', '0.0.0').set(0)
+            chainflipVersionGauge.labels('network', topVersion).set(1)
+            return
+        }
+
+        // Get the node's version
+        const nodeVersion = node.validator.cfeVersion
+
         // Parse version as numbers so they can be compared
         const nodeVersionAsNumber = Number(/([0-9]+)\.([0-9]+)\.([0-9]+)/g.exec(nodeVersion)!.slice(1, 4).join(''))
         const topVersionAsNumber = Number(/([0-9]+)\.([0-9]+)\.([0-9]+)/g.exec(topVersion)!.slice(1, 4).join(''))
 
         // Track metric
         chainflipVersionGauge.reset()
-        chainflipVersionGauge.labels(nodeVersion).set(1)
+        chainflipVersionGauge.labels('node', nodeVersion).set(1)
+        chainflipVersionGauge.labels('network', topVersion).set(1)
 
         if (nodeVersionAsNumber < topVersionAsNumber) {
             await log.warn(`${Chainflip.name}:${this.monitorVersion.name}: nodeVersion < topVersion: '${nodeVersion}' < '${topVersion}'`)

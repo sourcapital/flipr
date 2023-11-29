@@ -15,7 +15,7 @@ export const apiBlockHeightGauge = new Gauge({
 export const chainflipVersionGauge = new Gauge({
     name: 'chainflip_version',
     help: 'Chainflip node version',
-    labelNames: ['version']
+    labelNames: ['type', 'version']
 })
 
 export const nodeStateGauge = new Gauge({
