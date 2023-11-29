@@ -52,7 +52,7 @@ spec:
       serviceAccountName: flipr
       containers:
         - name: flipr
-          image: sourcap/flipr:release-1.0.1@sha256:1632fc640754a58e3cb56008674a0b4c8eb39d9b3de34f49df1e1f783af25b35
+          image: sourcap/flipr:release-1.0.2@sha256:adf041ca698e6f6b8b813044194e2e3b58e43f2b7b90212578242175622c503e
           imagePullPolicy: IfNotPresent
           env:
             - name: NODE_ENV
