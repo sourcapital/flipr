@@ -6,11 +6,11 @@ import {HeartbeatType, IncidentType} from '../integrations/BetterStack.js'
 import {
     getActiveAuthorityInfo,
     getLatestAuction,
-    getActiveCacheValidators,
     paginatedPenaltiesQuery,
     getValidatorLatestBlockInfo,
     getExtrinsicsByValidator,
-    getValidators
+    getValidators,
+    getValidatorByIdSs58
 } from '../helpers/GraphQL.js'
 import {
     chainflipVersionGauge,
@@ -68,17 +68,29 @@ export class Chainflip extends Polkadot {
     async monitorVersion() {
         await log.debug(`${Chainflip.name}: Checking if node version is up-to-date ...`)
 
-        const response = await this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo)
+        const [authorityResponse, validatorResponse] = await Promise.all([
+            this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo),
+            this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getValidatorLatestBlockInfo, {
+                'idSs58': this.getNodeAddress()
+            })
+        ])
 
-        if (response?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorVersion.name}: HTTP status code: ${response?.status}`)
+        if (authorityResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorVersion.name}:getActiveAuthorityInfo: HTTP status code: ${authorityResponse?.status}`)
+            chainflipVersionGauge.reset()
+            chainflipVersionGauge.labels('node', '0.0.0').set(0)
+            chainflipVersionGauge.labels('network', '0.0.0').set(0)
+            return
+        }
+        if (validatorResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorVersion.name}:getValidatorLatestBlockInfo: HTTP status code: ${validatorResponse?.status}`)
             chainflipVersionGauge.reset()
             chainflipVersionGauge.labels('node', '0.0.0').set(0)
             chainflipVersionGauge.labels('network', '0.0.0').set(0)
             return
         }
 
-        const authorities = response.data.data.epoch.nodes['0'].memberships.nodes
+        const authorities = authorityResponse.data.data.epoch.nodes['0'].memberships.nodes
 
         // Get the top version of the active nodes
         const topVersion = _.max(_.map(authorities, (node) => {
@@ -88,12 +100,10 @@ export class Chainflip extends Polkadot {
         })
         await log.debug(`${Chainflip.name}:${this.monitorVersion.name}: topVersion = ${topVersion}`)
 
-        const node = _.find(authorities, (node) => {
-            return node.validator.idSs58 === this.getNodeAddress()
-        })
+        const node = _.first(validatorResponse.data.data.validators.nodes)
 
         if (!node) {
-            await log.info(`${Chainflip.name}:${this.monitorVersion.name}: Node '${this.getNodeAddress()}' is not an authority. Skip version monitoring ...`)
+            await log.info(`${Chainflip.name}:${this.monitorVersion.name}: Node '${this.getNodeAddress()}' not registered. Skip version monitoring ...`)
             chainflipVersionGauge.reset()
             chainflipVersionGauge.labels('node', '0.0.0').set(0)
             chainflipVersionGauge.labels('network', topVersion).set(1)
@@ -101,7 +111,7 @@ export class Chainflip extends Polkadot {
         }
 
         // Get the node's version
-        const nodeVersion = node.validator.cfeVersion
+        const nodeVersion = node.cfeVersion
 
         // Parse version as numbers so they can be compared
         const nodeVersionAsNumber = Number(/([0-9]+)\.([0-9]+)\.([0-9]+)/g.exec(nodeVersion)!.slice(1, 4).join(''))
@@ -121,7 +131,7 @@ export class Chainflip extends Polkadot {
         await global.betterStack?.sendHeartbeat(Chainflip.name, HeartbeatType.VERSION)
     }
 
-    async monitorStates() {
+    async monitorState() {
         await log.debug(`${Chainflip.name}: Monitor node state ...`)
 
         const resetMetrics = () => {
@@ -133,20 +143,20 @@ export class Chainflip extends Polkadot {
             nodeStateGauge.labels('keyholder').set(0)
         }
 
-        const response = await this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getActiveCacheValidators)
+        const response = await this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getValidatorByIdSs58, {
+            'validatorId': this.getNodeAddress()
+        })
 
         if (response?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorStates.name}: Node HTTP status code: ${response?.status}`)
+            await log.error(`${Chainflip.name}:${this.monitorState.name}: Node HTTP status code: ${response?.status}`)
             resetMetrics()
             return
         }
 
-        const node = _.find(response.data.data.validators.nodes, (node) => {
-            return node.idSs58 === this.getNodeAddress()
-        })
+        const node = _.first(response.data.data.validators.nodes)
 
         if (!node) {
-            await log.warn(`${Chainflip.name}:${this.monitorStates.name}: Node is not registered. Skip state monitoring ...`)
+            await log.warn(`${Chainflip.name}:${this.monitorState.name}: Node '${this.getNodeAddress()}' not registered. Skip state monitoring ...`)
             resetMetrics()
             return
         }
@@ -279,7 +289,7 @@ export class Chainflip extends Polkadot {
         })
 
         if (!node) {
-            await log.warn(`${Chainflip.name}:${this.monitorReputation.name}: Node is not registered. Skip reputation monitoring ...`)
+            await log.warn(`${Chainflip.name}:${this.monitorReputation.name}: Node '${this.getNodeAddress()}' not registered. Skip reputation monitoring ...`)
             resetMetrics()
             return
         }

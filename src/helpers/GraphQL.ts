@@ -70,40 +70,6 @@ query GetLatestAuction {
 }
 `
 
-export const getActiveCacheValidators = `
-query GetActiveCacheValidators {
-  validators: allValidators(
-    filter: {or: [{isCurrentAuthority: {equalTo: true}}, {isCurrentBackup: {equalTo: true}}]}
-  ) {
-    nodes {
-      ...CacheValidator
-      __typename
-    }
-    __typename
-  }
-}
-
-fragment CacheValidator on Validator {
-  idHex
-  idSs58
-  alias
-  processorId
-  totalRewards
-  isCurrentAuthority
-  isCurrentBackup
-  isQualified
-  isOnline
-  isBidding
-  isKeyholder
-  reputationPoints
-  lockedBalance
-  unlockedBalance
-  firstFundingTimestamp
-  latestFundingTimestamp
-  __typename
-}
-`
-
 export const paginatedPenaltiesQuery = `
 query paginatedPenaltiesQuery($first: Int, $offset: Int, $startBlockId: Int!) {
   allPenalties(
@@ -245,6 +211,40 @@ fragment Extrinsic on Extrinsic {
 export const getValidators = `
 query Validators {
   validators: allValidators {
+    nodes {
+      ...CacheValidator
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment CacheValidator on Validator {
+  idHex
+  idSs58
+  alias
+  apyBp
+  boundRedeemAddress
+  processorId
+  totalRewards
+  isCurrentAuthority
+  isCurrentBackup
+  isQualified
+  isOnline
+  isBidding
+  isKeyholder
+  reputationPoints
+  lockedBalance
+  unlockedBalance
+  firstFundingTimestamp
+  latestFundingTimestamp
+  __typename
+}
+`
+
+export const getValidatorByIdSs58 = `
+query GetValidatorByIdSs58($validatorId: String!) {
+  validators: allValidators(condition: {idSs58: $validatorId}) {
     nodes {
       ...CacheValidator
       __typename

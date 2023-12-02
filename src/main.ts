@@ -61,7 +61,7 @@ new Cron(config.cron_schedule ?? '0 */3 * * * *', async () => {
 
     await Promise.all([
         chainflip.monitorVersion(),
-        chainflip.monitorStates(),
+        chainflip.monitorState(),
         chainflip.monitorBond(),
         chainflip.monitorReputation(),
         chainflip.monitorPenalties(),
