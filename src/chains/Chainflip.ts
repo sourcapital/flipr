@@ -25,13 +25,21 @@ import {
 } from '../integrations/Prometheus.js'
 
 export class Chainflip extends Polkadot {
-    private GRAPHQL_PROCESSOR_ENDPOINT = 'https://explorer-service-processor.chainflip.io/graphql'
-    private GRAPHQL_CACHE_ENDPOINT = 'https://cache-service.chainflip.io/graphql'
+    private readonly GRAPHQL_CACHE_ENDPOINT
+    private readonly GRAPHQL_PROCESSOR_ENDPOINT
 
     private lastBlockMonitoredForPenalties = 0
 
     constructor(url: string) {
         super(url, Chain.Substrate)
+
+        if (config.network === 'testnet') {
+            this.GRAPHQL_CACHE_ENDPOINT = 'https://chainflip-cache-perseverance.chainflip.io/graphql'
+            this.GRAPHQL_PROCESSOR_ENDPOINT = 'https://processor-perseverance.chainflip.io/graphql'
+        } else {
+            this.GRAPHQL_CACHE_ENDPOINT = 'https://cache-service.chainflip.io/graphql'
+            this.GRAPHQL_PROCESSOR_ENDPOINT = 'https://explorer-service-processor.chainflip.io/graphql'
+        }
     }
 
     async initHeartbeats() {
