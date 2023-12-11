@@ -54,10 +54,10 @@ export class Polkadot extends Node {
         let apiUrl: string
         switch (this.chain) {
             case Chain.Polkadot:
-                apiUrl = 'https://rpc.polkadot.io'
+                apiUrl = config.network === 'testnet' ? 'https://rpc-pdot.chainflip.io' : 'https://rpc.polkadot.io'
                 break
             case Chain.Substrate:
-                apiUrl = 'https://mainnet-rpc.chainflip.io'
+                apiUrl = config.network === 'testnet' ? config.nodeEndpoint.chainflip : 'https://mainnet-rpc.chainflip.io'
                 break
         }
 

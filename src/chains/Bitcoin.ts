@@ -50,10 +50,17 @@ export class Bitcoin extends Node {
     async isSynced(): Promise<boolean> {
         await log.debug(`${getChainName(this.chain)}: Checking if the node is synced ...`)
 
+        let apiUrl: string
+        switch (this.chain) {
+            case Chain.Bitcoin:
+                apiUrl = config.network === 'testnet' ? 'http://flip:flip@a108a82b574a640359e360cf66afd45d-424380952.eu-central-1.elb.amazonaws.com' : 'https://thorchain:password@bitcoin.ninerealms.com'
+                break
+        }
+
         // Await all time critical request together to minimize any delay (e.g. difference in block height)
         const [nodeResponse, apiResponse] = await Promise.all([
             this.query('getblockchaininfo'),
-            this.query('getblockchaininfo', 'https://thorchain:password@bitcoin.ninerealms.com'),
+            this.query('getblockchaininfo', apiUrl),
         ])
 
         if (nodeResponse?.status !== 200) {

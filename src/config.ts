@@ -15,5 +15,6 @@ export const config = {
         ethereum: process.env.NODE_ENDPOINT_ETHEREUM,
         polkadot: process.env.NODE_ENDPOINT_POLKADOT
     },
-    cron_schedule: process.env.CRON_SCHEDULE!
+    cron_schedule: process.env.CRON_SCHEDULE!,
+    network: process.env.NETWORK
 }

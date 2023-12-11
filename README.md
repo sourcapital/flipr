@@ -28,6 +28,7 @@ A monitoring application for Chainflip nodes.
 | BETTERSTACK_API_KEY     | No       | BetterStack API key, see [here](#betterstack-optional).                                                          |
 | LOGS_SOURCE_TOKEN       | No       | BetterStack Logs source token, see [here](#logs-optional).                                                       |
 | CRON_SCHEDULE           | No       | Cron schedule to adjust how often the nodes are monitored (e.g. `0 */3 * * * *` for every 3min).                 |
+| NETWORK                 | No       | Set to `testnet` if you want to run on Perseverance Testnet (default: `mainnet`).                                |
 | CHAINFLIP_NODE_ADDRESS  | Yes      | Public SS58 address of your Chainflip node (`cF...`).                                                            |
 | NODE_ENDPOINT_CHAINFLIP | Yes      | Chainflip node endpoint (e.g. http://chainflip.chainflip:9944).                                                  |
 | NODE_ENDPOINT_BITCOIN   | No       | Bitcoin node endpoint (e.g. [http://flip:flip@bitcoin.chainflip:8332](http://flip:flip@bitcoin.chainflip:8332)). |
