@@ -4,13 +4,13 @@ A monitoring application for Chainflip nodes.
 
 ## Features
 
-- All chains are monitored for `Health` and `Sync Status` every minute
-- Chainflip node version is monitored every minute
-- Kubernetes pod restarts are monitored every minute
+- All chains are monitored for `Health` and `Sync Status`
+- Chainflip node version is monitored
+- Kubernetes pod restarts are monitored
 - Kubernetes pod logs of all chains are aggregated
-- Reputation is monitored every minute
-- Penalties are monitored every minute
-- Chain observations are monitored every minute
+- Reputation is monitored
+- Penalties are monitored
+- Chain observations are monitored
 
 ## Supported Chains
 
@@ -176,6 +176,17 @@ sudo systemctl stop flipr
 sudo systemctl restart flipr
 ```
 
+#### Upgrading to a new Version
+
+If you want to upgrade to a new version:
+
+```
+cd flipr
+git pull
+yarn build
+sudo systemctl restart flipr
+```
+
 ## Local Environment
 
 ### Installation
@@ -208,7 +219,7 @@ yarn start
 
 BetterStack Uptime is used for alerting and incident management.
 
-- Heartbeats are sent every minute for `Health` and `Sync Status` of the nodes
+- Heartbeats are sent for `Health` and `Sync Status` of the nodes
 - Missed heartbeats create incidents
 - Kubernetes pod restarts create incidents
 - Low reputation create incidents
