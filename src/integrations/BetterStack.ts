@@ -147,14 +147,14 @@ export class BetterStack {
         }
     }
 
-    async createReputationIncident(name: string, reputation: number, threshold: number) {
+    async createReputationIncident(name: string, reputation: number) {
         const identifier = `${name} ${IncidentType.REPUTATION} (${config.chainflipNodeAddress!.slice(-4)})`
         const previousReputation = this.cache.get(identifier) ?? 0
 
-        if (reputation < threshold && reputation < previousReputation * 0.75) {
+        if (reputation < 2000 && reputation < previousReputation * 0.75) {
             await this.createIncident(
                 `${identifier}`,
-                `${name} node's reputation fell to ${numeral(reputation).format('0,0')}!`
+                `${name} node reputation fell to ${numeral(reputation).format('0,0')}!`
             )
             this.cache.set(identifier, reputation)
         }
