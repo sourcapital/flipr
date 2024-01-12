@@ -78,12 +78,12 @@ spec:
           ports:
             - containerPort: 3000
           resources:
-            limits:
-              cpu: '0.2'
-              memory: 256Mi
             requests:
               cpu: '0.2'
               memory: 256Mi
+            limits:
+              cpu: '0.4'
+              memory: 512Mi
           livenessProbe:
             httpGet:
               path: /healthz
