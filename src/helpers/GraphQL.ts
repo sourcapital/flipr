@@ -1,37 +1,74 @@
-export const getActiveAuthorityInfo = `
-query getActiveAuthorityInfo {
-  epoch: allEpoches(first: 1, orderBy: ID_DESC) {
-    nodes {
-      ...EpochWithMemberships
-      __typename
+export const getCfeVersions = `
+query getCfeVersions {
+    allCfeVersions(orderBy: ID_DESC) {
+        edges {
+            node {
+                id
+                validatorsByCfeVersionId {
+                    edges {
+                        node {
+                            accountByAccountId {
+                                idSs58
+                            }
+                            lastHeartbeatBlockId
+                        }
+                    }
+                }
+            }
+        }
     }
-    __typename
-  }
-  lastBlock: allBlocks(first: 1, orderBy: ID_DESC) {
+}
+`
+
+export const getValidatorLatestBlockInfo = `
+query getValidatorLatestBlockInfo($idSs58: String!) {
+  accounts: allAccounts(condition: {idSs58: $idSs58}) {
     nodes {
-      id
+      ...AccountWithPossibleValidator
       __typename
     }
     __typename
   }
 }
 
-fragment EpochWithMemberships on Epoch {
+fragment AccountWithPossibleValidator on Account {
   id
-  startBlockId
-  endBlockId
-  memberships: authorityMembershipsByEpochId(orderBy: BID_DESC) {
+  alias
+  idSs58
+  historicRewards: accountEpochBalanceChangesByAccountId(
+    filter: {endOfEpochBalance: {isNull: false}}
+  ) {
+    aggregates {
+      sum {
+        startOfEpochBalance
+        endOfEpochBalance
+        balanceChange
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+  currentRewards: accountEpochBalanceChangesByAccountId(
+    last: 1
+    filter: {endOfEpochBalance: {isNull: true}}
+  ) {
+    nodes {
+      startOfEpochBalance
+      balanceChange
+      __typename
+    }
+    __typename
+  }
+  validators: validatorsByAccountId {
     nodes {
       id
-      bid
-      reward
-      validator: validatorByValidatorId {
-        id
-        idSs58
-        alias
-        cfeVersion: cfeVersionId
-        totalMemberships: authorityMembershipsByValidatorId {
-          totalCount
+      lastHeartbeatBlockId
+      cfeVersion: cfeVersionId
+      boundRedeemAddress
+      membership: authorityMembershipsByValidatorId(last: 1) {
+        nodes {
+          epochId
           __typename
         }
         __typename
@@ -40,11 +77,53 @@ fragment EpochWithMemberships on Epoch {
     }
     __typename
   }
-  slashedEvents: validatorFundingEventsByEpochId(condition: {type: SLASHED}) {
-    groupedAggregates(groupBy: VALIDATOR_ID) {
-      validatorId: keys
-      sum {
-        amount
+  __typename
+}
+`
+
+export const getAuthorityMembershipsForValidator = `
+query getAuthorityMembershipsForValidator($validatorId: Int, $accountId: Int, $first: Int, $offset: Int) {
+  memberships: allAuthorityMemberships(
+    orderBy: ID_DESC
+    first: $first
+    offset: $offset
+    condition: {validatorId: $validatorId}
+  ) {
+    pageInfo {
+      startCursor
+      hasPreviousPage
+      hasNextPage
+      endCursor
+      __typename
+    }
+    totalCount
+    edges {
+      node {
+        ...AuthorityMembershipWithEpoch
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment AuthorityMembershipWithEpoch on AuthorityMembership {
+  id
+  reward
+  epoch: epochByEpochId {
+    id
+    startBlockId
+    endBlockId
+    bond
+    totalBonded
+    eventType: accountFundingEventsByEpochId(condition: {accountId: $accountId}) {
+      groupedAggregates(groupBy: TYPE) {
+        type: keys
+        sum {
+          amount
+          __typename
+        }
         __typename
       }
       __typename
@@ -70,14 +149,23 @@ query GetLatestAuction {
 }
 `
 
-export const paginatedPenaltiesQuery = `
-query paginatedPenaltiesQuery($first: Int, $offset: Int, $startBlockId: Int!) {
-  allPenalties(
-    offset: $offset
-    first: $first
+export const paginatedPenaltiesByValidatorQuery = `
+query paginatedPenaltiesByValidatorQuery($validatorId: Int, $first: Int, $last: Int, $after: Cursor, $before: Cursor) {
+  penalties: allPenalties(
+    condition: {validatorId: $validatorId}
     orderBy: ID_DESC
-    filter: {blockId: {greaterThanOrEqualTo: $startBlockId}}
+    after: $after
+    before: $before
+    first: $first
+    last: $last
   ) {
+    pageInfo {
+      startCursor
+      endCursor
+      hasNextPage
+      hasPreviousPage
+      __typename
+    }
     edges {
       node {
         ...Penalty
@@ -85,7 +173,6 @@ query paginatedPenaltiesQuery($first: Int, $offset: Int, $startBlockId: Int!) {
       }
       __typename
     }
-    totalCount
     __typename
   }
 }
@@ -94,64 +181,46 @@ fragment Penalty on Penalty {
   id
   validator: validatorByValidatorId {
     id
-    idSs58
-    alias
+    account: accountByAccountId {
+      idSs58
+      alias
+      __typename
+    }
     __typename
   }
-  blockId
+  block: blockByBlockId {
+    id
+    timestamp
+    __typename
+  }
   reason
   amount
   __typename
 }
 `
 
-export const getValidatorLatestBlockInfo = `
-query getValidatorLatestBlockInfo($idSs58: String!) {
-  validators: allValidators(condition: {idSs58: $idSs58}) {
-    nodes {
-      ...ExplorerValidator
+export const getExtrinsicsByAccount = `
+query getExtrinsicsByAccount($accountId: Int, $first: Int, $last: Int, $after: Cursor, $before: Cursor) {
+  extrinsics: allExtrinsics(
+    condition: {submitterId: $accountId}
+    orderBy: ID_DESC
+    after: $after
+    before: $before
+    first: $first
+    last: $last
+  ) {
+    pageInfo {
+      hasPreviousPage
+      startCursor
+      hasNextPage
+      endCursor
       __typename
     }
-    __typename
-  }
-}
-
-fragment ExplorerValidator on Validator {
-  id
-  alias
-  idSs58
-  lastHeartbeatBlockId
-  authorityMembership: authorityMembershipsByValidatorId(last: 1) {
-    nodes {
-      id
-      epochId
-      __typename
-    }
-    aggregates {
-      sum {
-        reward
+    edges {
+      node {
+        ...Extrinsic
         __typename
       }
-      __typename
-    }
-    __typename
-  }
-  cfeVersion: cfeVersionId
-  __typename
-}
-`
-
-export const getExtrinsicsByValidator = `
-query getExtrinsicsByValidator($validatorId: Int, $offset: Int, $first: Int!, $maxBlock: Int!, $minBlock: Int!) {
-  extrinsics: allExtrinsics(
-    condition: {submitterId: $validatorId}
-    orderBy: BLOCK_ID_DESC
-    offset: $offset
-    first: $first
-    filter: {blockId: {lessThanOrEqualTo: $maxBlock, greaterThanOrEqualTo: $minBlock}}
-  ) {
-    nodes {
-      ...Extrinsic
       __typename
     }
     __typename
@@ -180,7 +249,7 @@ fragment Extrinsic on Extrinsic {
   signature
   success
   tip
-  validator: validatorBySubmitterId {
+  account: accountBySubmitterId {
     id
     idSs58
     __typename
