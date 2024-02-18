@@ -273,12 +273,13 @@ export class Chainflip extends Polkadot {
         }
 
         const nodes = _.sortBy(_.map(_.filter(response.data.data.validators.nodes, (node) => {
-            return node.isCurrentAuthority // Filter active nodes
+            return node.isCurrentAuthority || node.isCurrentBackup // Filter active nodes
         }), (node) => {
             return { // Map relevant values
                 address: node.idSs58,
                 reputation: Number(node.reputationPoints),
-                isCurrentAuthority: node.isCurrentAuthority
+                isCurrentAuthority: node.isCurrentAuthority,
+                isCurrentBackup: node.isCurrentBackup
             }
         }), (node) => {
             return node.reputation // Sort by reputation (ascending)
@@ -429,6 +430,11 @@ export class Chainflip extends Polkadot {
 
         if (extrinsicsResponse?.status !== 200) {
             await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getExtrinsicsByAccount: Node HTTP status code: ${extrinsicsResponse?.status}`)
+            resetMetrics()
+            return
+        }
+        if (extrinsicsResponse?.data?.errors !== undefined) {
+            await log.warn(`${Chainflip.name}:${this.monitorChainObservations.name}:getExtrinsicsByAccount: Unable to get extrinsics: ${extrinsicsResponse.data.errors['0'].message}`)
             resetMetrics()
             return
         }
