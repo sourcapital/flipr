@@ -409,19 +409,34 @@ export class Chainflip extends Polkadot {
             nodeObservedBlockHeightGauge.labels('Polkadot').set(0)
         }
 
-        const [validatorResponse] = await Promise.all([
+        const [validatorResponse1, validatorResponse2] = await Promise.all([
             this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getValidatorLatestBlockInfo, {
                 'idSs58': this.getNodeAddress()
+            }),
+            this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getValidatorByIdSs58, {
+                'validatorId': this.getNodeAddress()
             })
         ])
 
-        if (validatorResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getValidatorLatestBlockInfo: HTTP status code: ${validatorResponse?.status}`)
+        if (validatorResponse1?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getValidatorLatestBlockInfo: HTTP status code: ${validatorResponse1?.status}`)
+            resetMetrics()
+            return
+        }
+        if (validatorResponse2?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:getValidatorByIdSs58: HTTP status code: ${validatorResponse2?.status}`)
             resetMetrics()
             return
         }
 
-        const validatorId = validatorResponse.data.data.accounts.nodes['0'].id
+        const validatorId = validatorResponse1.data.data.accounts.nodes['0'].id
+        const isCurrentAuthority = validatorResponse2.data.data.validators.nodes['0'].isCurrentAuthority
+
+        if (!isCurrentAuthority) {
+            await log.warn(`${Chainflip.name}:${this.monitorChainObservations.name}: Node '${this.getNodeAddress()}' not an authority. Skip chain observation monitoring ...`)
+            resetMetrics()
+            return
+        }
 
         const extrinsicsResponse = await this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getExtrinsicsByAccount, {
             accountId: validatorId,
