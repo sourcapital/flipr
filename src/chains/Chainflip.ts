@@ -8,7 +8,7 @@ import {
     getValidatorLatestBlockInfo,
     getValidators,
     getValidatorByIdSs58,
-    getCfeVersions,
+    getActiveAuthorityInfo,
     getAuthorityMembershipsForValidator,
     paginatedPenaltiesByValidatorQuery,
     getExtrinsicsByAccount
@@ -77,45 +77,45 @@ export class Chainflip extends Polkadot {
     async monitorVersion() {
         await log.debug(`${Chainflip.name}: Checking if node version is up-to-date ...`)
 
-        const [cfeVersionResponse, validatorResponse] = await Promise.all([
-            this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getCfeVersions),
+        const [activeValidatorResponse, targetValidatorResponse] = await Promise.all([
+            this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getActiveAuthorityInfo),
             this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getValidatorLatestBlockInfo, {
                 'idSs58': this.getNodeAddress()
             })
         ])
 
-        if (cfeVersionResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorVersion.name}:getCfeVersions: HTTP status code: ${cfeVersionResponse?.status}`)
+        if (activeValidatorResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorVersion.name}:getActiveAuthorityInfo: HTTP status code: ${activeValidatorResponse?.status}`)
             chainflipVersionGauge.reset()
             chainflipVersionGauge.labels('node', '0.0.0').set(0)
             chainflipVersionGauge.labels('network', '0.0.0').set(0)
             return
         }
-        if (validatorResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorVersion.name}:getValidatorLatestBlockInfo: HTTP status code: ${validatorResponse?.status}`)
+        if (targetValidatorResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorVersion.name}:getValidatorLatestBlockInfo: HTTP status code: ${targetValidatorResponse?.status}`)
             chainflipVersionGauge.reset()
             chainflipVersionGauge.labels('node', '0.0.0').set(0)
             chainflipVersionGauge.labels('network', '0.0.0').set(0)
             return
         }
 
-        const versions = cfeVersionResponse.data.data.allCfeVersions.edges
-        const latestCfeVersion = _.first(versions).node.id
-        const nodesOnLatestVersion = _.map(_.first(versions).node.validatorsByCfeVersionId.edges, (item) => {
-            return item.node.accountByAccountId.idSs58
+        const nodes = activeValidatorResponse.data.data.epoch.nodes['0'].memberships.nodes
+        const versions = _.map(nodes, (node) => {
+            return node.validator.cfeVersion
         })
+        const versionCounts = _.countBy(versions)
+        const majorityAuthorityVersion = String(_.max(_.keys(versionCounts), version => versionCounts[version]))
+        await log.debug(`${Chainflip.name}:${this.monitorVersion.name}: majorityAuthorityVersion = ${majorityAuthorityVersion}`)
 
-        await log.debug(`${Chainflip.name}:${this.monitorVersion.name}: latestVersion = ${latestCfeVersion}`)
-
-        const node = validatorResponse.data.data.accounts.nodes['0'].validators.nodes['0']
+        const node = targetValidatorResponse.data.data.accounts.nodes['0'].validators.nodes['0']
 
         // Track metric
         chainflipVersionGauge.reset()
         chainflipVersionGauge.labels('node', node.cfeVersion).set(1)
-        chainflipVersionGauge.labels('network', latestCfeVersion).set(1)
+        chainflipVersionGauge.labels('network', majorityAuthorityVersion).set(1)
 
-        if (!nodesOnLatestVersion.includes(this.getNodeAddress())) {
-            await log.warn(`${Chainflip.name}:${this.monitorVersion.name}: nodeVersion < topVersion: '${node.cfeVersion}' < '${latestCfeVersion}'`)
+        if (node.cfeVersion !== majorityAuthorityVersion) {
+            await log.warn(`${Chainflip.name}:${this.monitorVersion.name}: nodeVersion != majorityAuthorityVersion: '${node.cfeVersion}' != '${majorityAuthorityVersion}'`)
             return
         }
 
@@ -184,9 +184,12 @@ export class Chainflip extends Polkadot {
             networkMinActiveBidGauge.set(0)
         }
 
-        const [validatorResponse, auctionResponse] = await Promise.all([
+        const [validatorResponse, auctionResponse, latestBlockInfoResponse] = await Promise.all([
             this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getValidators),
-            this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getLatestAuction)
+            this.queryGraphQL(this.GRAPHQL_CACHE_ENDPOINT, getLatestAuction),
+            this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getValidatorLatestBlockInfo, {
+                'idSs58': this.getNodeAddress()
+            })
         ])
 
         if (validatorResponse?.status !== 200) {
@@ -199,11 +202,15 @@ export class Chainflip extends Polkadot {
             resetMetrics()
             return
         }
+        if (latestBlockInfoResponse?.status !== 200) {
+            await log.error(`${Chainflip.name}:${this.monitorBond.name}:getValidatorLatestBlockInfo: HTTP status code: ${latestBlockInfoResponse?.status}`)
+            resetMetrics()
+            return
+        }
 
         const node = _.find(_.map(validatorResponse.data.data.validators.nodes, (node) => {
             return { // Map relevant values
                 address: node.idSs58,
-                id: node.processorId,
                 lockedBalance: Number(node.lockedBalance) / 1e18,
                 unlockedBalance: Number(node.unlockedBalance) / 1e18,
                 totalRewards: Number(node.totalRewards) / 1e18
@@ -218,10 +225,12 @@ export class Chainflip extends Polkadot {
             return
         }
 
+        const nodeId = latestBlockInfoResponse.data.data.accounts.nodes['0'].id
+
         const [authorityResponse] = await Promise.all([
             this.queryGraphQL(this.GRAPHQL_PROCESSOR_ENDPOINT, getAuthorityMembershipsForValidator, {
-                'validatorId': node.id,
-                'accountId': node.id,
+                'validatorId': nodeId,
+                'accountId': nodeId,
                 'first': 1
             })
         ])

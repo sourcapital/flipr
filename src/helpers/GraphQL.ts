@@ -1,22 +1,61 @@
-export const getCfeVersions = `
-query getCfeVersions {
-    allCfeVersions(orderBy: ID_DESC) {
-        edges {
-            node {
-                id
-                validatorsByCfeVersionId {
-                    edges {
-                        node {
-                            accountByAccountId {
-                                idSs58
-                            }
-                            lastHeartbeatBlockId
-                        }
-                    }
-                }
-            }
-        }
+export const getActiveAuthorityInfo = `
+query getActiveAuthorityInfo {
+  epoch: allEpoches(first: 1, orderBy: ID_DESC) {
+    nodes {
+      ...EpochWithMemberships
+      __typename
     }
+    __typename
+  }
+  lastBlock: allBlocks(first: 1, orderBy: ID_DESC) {
+    nodes {
+      id
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment EpochWithMemberships on Epoch {
+  id
+  startBlockId
+  endBlockId
+  memberships: authorityMembershipsByEpochId(orderBy: BID_DESC) {
+    nodes {
+      id
+      bid
+      reward
+      validator: validatorByValidatorId {
+        id
+        account: accountByAccountId {
+          id
+          alias
+          idSs58
+          __typename
+        }
+        cfeVersion: cfeVersionId
+        totalMemberships: authorityMembershipsByValidatorId {
+          totalCount
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+  slashedEvents: accountFundingEventsByEpochId(condition: {type: SLASHED}) {
+    groupedAggregates(groupBy: ACCOUNT_ID) {
+      accountId: keys
+      sum {
+        amount
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+  __typename
 }
 `
 
@@ -35,6 +74,7 @@ fragment AccountWithPossibleValidator on Account {
   id
   alias
   idSs58
+  boundRedeemAddress
   historicRewards: accountEpochBalanceChangesByAccountId(
     filter: {endOfEpochBalance: {isNull: false}}
   ) {
@@ -65,7 +105,6 @@ fragment AccountWithPossibleValidator on Account {
       id
       lastHeartbeatBlockId
       cfeVersion: cfeVersionId
-      boundRedeemAddress
       membership: authorityMembershipsByValidatorId(last: 1) {
         nodes {
           epochId
@@ -294,7 +333,6 @@ fragment CacheValidator on Validator {
   alias
   apyBp
   boundRedeemAddress
-  processorId
   totalRewards
   isCurrentAuthority
   isCurrentBackup
@@ -328,7 +366,6 @@ fragment CacheValidator on Validator {
   alias
   apyBp
   boundRedeemAddress
-  processorId
   totalRewards
   isCurrentAuthority
   isCurrentBackup
