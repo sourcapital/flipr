@@ -53,7 +53,7 @@ export class Ethereum extends Node {
         let apiUrl: string
         switch (this.chain) {
             case Chain.Ethereum:
-                apiUrl = config.network === 'testnet' ? 'https://ethereum-goerli.publicnode.com' : 'https://rpc.mevblocker.io'
+                apiUrl = config.network === 'testnet' ? 'https://ethereum-sepolia-rpc.publicnode.com' : 'https://rpc.mevblocker.io'
                 break
         }
 

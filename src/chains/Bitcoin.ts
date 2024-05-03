@@ -53,7 +53,7 @@ export class Bitcoin extends Node {
         let apiUrl: string
         switch (this.chain) {
             case Chain.Bitcoin:
-                apiUrl = config.network === 'testnet' ? 'http://flip:flip@a108a82b574a640359e360cf66afd45d-424380952.eu-central-1.elb.amazonaws.com' : 'https://thorchain:password@bitcoin.ninerealms.com'
+                apiUrl = config.network === 'testnet' ? 'https://flip:flip@bitcoin-rpc-2.dashnode.org' : 'https://thorchain:password@bitcoin.ninerealms.com'
                 break
         }
 
