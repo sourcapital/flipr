@@ -17,7 +17,7 @@ A monitoring application for Chainflip nodes.
 | Client   | Chain                            |
 |----------|----------------------------------|
 | Bitcoin  | Bitcoin (BTC)                    |
-| Ethereum | Ethereum (ETH)                   |
+| Ethereum | Ethereum (ETH), Arbitrum (ARB)   |
 | Polkadot | Polkadot (DOT), Chainflip (FLIP) |
 
 ## Environment Variables
@@ -34,6 +34,7 @@ A monitoring application for Chainflip nodes.
 | NODE_ENDPOINT_BITCOIN   | No       | Bitcoin node endpoint (e.g. [http://flip:flip@bitcoin.chainflip:8332](http://flip:flip@bitcoin.chainflip:8332)). |
 | NODE_ENDPOINT_ETHEREUM  | No       | Ethereum node endpoint (e.g. http://ethereum.chainflip:8545).                                                    |
 | NODE_ENDPOINT_POLKADOT  | No       | Polkadot node endpoint (e.g. http://polkadot.chainflip:9944).                                                    |
+| NODE_ENDPOINT_ARBITRUM  | No       | Arbitrum node endpoint (e.g. http://arbitrum.chainflip:8545).                                                    |
 
 If you want to skip the monitoring of a non-required node endpoint, simply remove the specific environment variable (e.g. `NODE_ENDPOINT_BITCOIN`).
 
@@ -113,6 +114,7 @@ Environment="NODE_ENDPOINT_CHAINFLIP=http://localhost:9944"
 Environment="NODE_ENDPOINT_BITCOIN=XXX"
 Environment="NODE_ENDPOINT_ETHEREUM=XXX"
 Environment="NODE_ENDPOINT_POLKADOT=XXX"
+Environment="NODE_ENDPOINT_ARBITRUM=XXX"
 
 ExecStart=NODE_INSTALLATION_PATH DIRECTORY_PATH/dist/main.js
 
@@ -248,7 +250,7 @@ Sign up at [betterstack.com](https://logs.betterstack.com/?ref=8l7f) and follow 
 ```
 MIT License
 
-Copyright (c) 2023 Sour Capital Pte. Ltd.
+Copyright (c) 2024 Sour Capital Pte. Ltd.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
