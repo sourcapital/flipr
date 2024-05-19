@@ -333,7 +333,6 @@ fragment CacheValidator on Validator {
   alias
   apyBp
   boundRedeemAddress
-  totalRewards
   isCurrentAuthority
   isCurrentBackup
   isQualified
@@ -343,8 +342,6 @@ fragment CacheValidator on Validator {
   reputationPoints
   lockedBalance
   unlockedBalance
-  firstFundingTimestamp
-  latestFundingTimestamp
   __typename
 }
 `
@@ -366,7 +363,6 @@ fragment CacheValidator on Validator {
   alias
   apyBp
   boundRedeemAddress
-  totalRewards
   isCurrentAuthority
   isCurrentBackup
   isQualified
@@ -376,8 +372,6 @@ fragment CacheValidator on Validator {
   reputationPoints
   lockedBalance
   unlockedBalance
-  firstFundingTimestamp
-  latestFundingTimestamp
   __typename
 }
 `
