@@ -13,7 +13,8 @@ export const config = {
         chainflip: process.env.NODE_ENDPOINT_CHAINFLIP!,
         bitcoin: process.env.NODE_ENDPOINT_BITCOIN,
         ethereum: process.env.NODE_ENDPOINT_ETHEREUM,
-        polkadot: process.env.NODE_ENDPOINT_POLKADOT
+        polkadot: process.env.NODE_ENDPOINT_POLKADOT,
+        arbitrum: process.env.NODE_ENDPOINT_ARBITRUM
     },
     cron_schedule: process.env.CRON_SCHEDULE!,
     network: process.env.NETWORK

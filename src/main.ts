@@ -9,6 +9,7 @@ import {Node} from './chains/Node.js'
 import {Bitcoin} from './chains/Bitcoin.js'
 import {Ethereum} from './chains/Ethereum.js'
 import {Polkadot} from './chains/Polkadot.js'
+import {Arbitrum} from './chains/Arbitrum.js'
 import {Chainflip} from './chains/Chainflip.js'
 
 
@@ -28,6 +29,7 @@ const nodes: Node[] = [
 if (config.nodeEndpoint.bitcoin) nodes.push(new Bitcoin(config.nodeEndpoint.bitcoin))
 if (config.nodeEndpoint.ethereum) nodes.push(new Ethereum(config.nodeEndpoint.ethereum))
 if (config.nodeEndpoint.polkadot) nodes.push(new Polkadot(config.nodeEndpoint.polkadot))
+if (config.nodeEndpoint.arbitrum) nodes.push(new Arbitrum(config.nodeEndpoint.arbitrum))
 
 // Only do BetterStack stuff if it's enabled
 if (global.betterStack) {

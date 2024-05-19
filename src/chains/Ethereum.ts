@@ -9,7 +9,8 @@ import {
 } from '../integrations/Prometheus.js'
 
 export enum Chain {
-    Ethereum = 'ethereum'
+    Ethereum = 'ethereum',
+    Arbitrum = 'arbitrum'
 }
 
 const getChainName = (chain: string | Chain): string => {
@@ -54,6 +55,9 @@ export class Ethereum extends Node {
         switch (this.chain) {
             case Chain.Ethereum:
                 apiUrl = config.network === 'testnet' ? 'https://ethereum-sepolia-rpc.publicnode.com' : 'https://rpc.mevblocker.io'
+                break
+            case Chain.Arbitrum:
+                apiUrl = config.network === 'testnet' ? 'https://sepolia-rollup.arbitrum.io/rpc' : 'https://arbitrum.llamarpc.com'
                 break
         }
 
