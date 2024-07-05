@@ -79,8 +79,6 @@ export class BetterStack {
     async setupCleanup(schedule: string) {
         if (config.nodeENV !== 'production') return
 
-        await log.info('Setup BetterStack incident cleanup ...')
-
         new Cron(schedule, async () => {
             const incidents = await global.betterStack!.getIncidents(undefined, true, false)
             const incidentsToDelete = _.sortBy(_.filter(incidents, (incident) => {
