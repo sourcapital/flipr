@@ -343,7 +343,7 @@ export class Chainflip extends Polkadot {
         const syncStateResponse = await super.query('system_syncState')
 
         if (syncStateResponse?.status !== 200) {
-            await log.error(`${Chainflip.name}:${this.monitorChainObservations.name}:system_syncState: HTTP status code: ${syncStateResponse?.status}`)
+            await log.error(`${Chainflip.name}:${this.monitorPenalties.name}:system_syncState: HTTP status code: ${syncStateResponse?.status}`)
             return
         }
 
