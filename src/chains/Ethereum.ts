@@ -98,8 +98,18 @@ export class Ethereum extends Node {
         nodeBlockHeightGauge.labels(getChainName(this.chain)).set(nodeBlockHeight)
         apiBlockHeightGauge.labels(getChainName(this.chain)).set(apiBlockHeight)
 
-        // Check if node is behind the api block height (1 block behind is ok due to network latency)
-        if (nodeBlockHeight < apiBlockHeight - 1) {
+        let allowedBlockHeightLag: number
+        switch (this.chain) {
+            case Chain.Arbitrum:
+                allowedBlockHeightLag = 10
+                break
+            default:
+                allowedBlockHeightLag = 1
+                break
+        }
+
+        // Check if node is behind the api block height (due to network latency)
+        if (nodeBlockHeight < apiBlockHeight - allowedBlockHeightLag) {
             await log.warn(`${getChainName(this.chain)}:${this.isSynced.name}: nodeBlockHeight < apiBlockHeight: ${nodeBlockHeight} < ${apiBlockHeight}`)
             return false
         }
