@@ -375,6 +375,10 @@ export class Chainflip extends Polkadot {
             await log.error(`${Chainflip.name}:${this.monitorPenalties.name}:paginatedPenaltiesByValidatorQuery: HTTP status code: ${penaltiesResponse?.status}`)
             return
         }
+        if (penaltiesResponse?.data?.errors?.length !== 0) {
+            await log.error(`${Chainflip.name}:${this.monitorPenalties.name}:paginatedPenaltiesByValidatorQuery: ${penaltiesResponse.data.errors[0].message}`)
+            return
+        }
 
         const penalties = _.sortBy(_.map(_.filter(penaltiesResponse.data.data.penalties.edges, (penalty) => {
             return penalty.node.block.id > this.lastBlockMonitoredForPenalties
