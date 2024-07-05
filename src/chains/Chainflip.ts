@@ -375,8 +375,8 @@ export class Chainflip extends Polkadot {
             await log.error(`${Chainflip.name}:${this.monitorPenalties.name}:paginatedPenaltiesByValidatorQuery: HTTP status code: ${penaltiesResponse?.status}`)
             return
         }
-        if (penaltiesResponse?.data?.errors?.length !== 0) {
-            await log.error(`${Chainflip.name}:${this.monitorPenalties.name}:paginatedPenaltiesByValidatorQuery: ${penaltiesResponse.data.errors[0].message}`)
+        if (penaltiesResponse?.data?.errors !== undefined) {
+            await log.warn(`${Chainflip.name}:${this.monitorPenalties.name}:paginatedPenaltiesByValidatorQuery: ${penaltiesResponse.data.errors[0].message}`)
             return
         }
 
@@ -420,6 +420,7 @@ export class Chainflip extends Polkadot {
             nodeObservedBlockHeightGauge.labels('Bitcoin').set(0)
             nodeObservedBlockHeightGauge.labels('Ethereum').set(0)
             nodeObservedBlockHeightGauge.labels('Polkadot').set(0)
+            nodeObservedBlockHeightGauge.labels('Arbitrum').set(0)
         }
 
         const [validatorResponse1, validatorResponse2] = await Promise.all([
