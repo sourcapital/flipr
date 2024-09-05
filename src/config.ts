@@ -14,7 +14,8 @@ export const config = {
         bitcoin: process.env.NODE_ENDPOINT_BITCOIN,
         ethereum: process.env.NODE_ENDPOINT_ETHEREUM,
         polkadot: process.env.NODE_ENDPOINT_POLKADOT,
-        arbitrum: process.env.NODE_ENDPOINT_ARBITRUM
+        arbitrum: process.env.NODE_ENDPOINT_ARBITRUM,
+        solana: process.env.NODE_ENDPOINT_SOLANA,
     },
     cron_schedule: process.env.CRON_SCHEDULE!,
     network: process.env.NETWORK

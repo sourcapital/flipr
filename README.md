@@ -19,6 +19,7 @@ A monitoring application for Chainflip nodes.
 | Bitcoin  | Bitcoin (BTC)                    |
 | Ethereum | Ethereum (ETH), Arbitrum (ARB)   |
 | Polkadot | Polkadot (DOT), Chainflip (FLIP) |
+| Solana   | Solana (SOL)                     |
 
 ## Environment Variables
 
@@ -35,6 +36,7 @@ A monitoring application for Chainflip nodes.
 | NODE_ENDPOINT_ETHEREUM  | No       | Ethereum node endpoint (e.g. http://ethereum.chainflip:8545).                                                    |
 | NODE_ENDPOINT_POLKADOT  | No       | Polkadot node endpoint (e.g. http://polkadot.chainflip:9944).                                                    |
 | NODE_ENDPOINT_ARBITRUM  | No       | Arbitrum node endpoint (e.g. http://arbitrum.chainflip:8545).                                                    |
+| NODE_ENDPOINT_SOLANA    | No       | Solana node endpoint (e.g. http://solana.chainflip:8899).                                                        |
 
 If you want to skip the monitoring of a non-required node endpoint, simply remove the specific environment variable (e.g. `NODE_ENDPOINT_BITCOIN`).
 
@@ -115,6 +117,7 @@ Environment="NODE_ENDPOINT_BITCOIN=XXX"
 Environment="NODE_ENDPOINT_ETHEREUM=XXX"
 Environment="NODE_ENDPOINT_POLKADOT=XXX"
 Environment="NODE_ENDPOINT_ARBITRUM=XXX"
+Environment="NODE_ENDPOINT_SOLANA=XXX"
 
 ExecStart=NODE_INSTALLATION_PATH DIRECTORY_PATH/dist/main.js
 

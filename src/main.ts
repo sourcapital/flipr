@@ -11,6 +11,7 @@ import {Ethereum} from './chains/Ethereum.js'
 import {Polkadot} from './chains/Polkadot.js'
 import {Arbitrum} from './chains/Arbitrum.js'
 import {Chainflip} from './chains/Chainflip.js'
+import {Solana} from './chains/Solana.js'
 
 
 // Setup globals
@@ -30,6 +31,7 @@ if (config.nodeEndpoint.bitcoin) nodes.push(new Bitcoin(config.nodeEndpoint.bitc
 if (config.nodeEndpoint.ethereum) nodes.push(new Ethereum(config.nodeEndpoint.ethereum))
 if (config.nodeEndpoint.polkadot) nodes.push(new Polkadot(config.nodeEndpoint.polkadot))
 if (config.nodeEndpoint.arbitrum) nodes.push(new Arbitrum(config.nodeEndpoint.arbitrum))
+if (config.nodeEndpoint.solana) nodes.push(new Solana(config.nodeEndpoint.solana))
 
 // Only do BetterStack stuff if it's enabled
 if (global.betterStack) {
