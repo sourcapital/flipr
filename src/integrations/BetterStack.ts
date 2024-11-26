@@ -149,9 +149,28 @@ export class BetterStack {
 
     async createReputationIncident(name: string, reputation: number) {
         const identifier = `${name} ${IncidentType.REPUTATION} (${config.chainflipNodeAddress!.slice(-4)})`
-        const previousReputation = this.cache.get(identifier) ?? 0
+        const previousReputation = this.cache.get(identifier) ?? reputation
 
-        if (reputation < 2000 && reputation < previousReputation * 0.75) {
+        const hasSignificantDecrease = (current: number, previous: number): boolean => {
+            // If both values are positive, use regular percentage comparison
+            if (current >= 0 && previous >= 0) {
+                return current < previous * 0.9
+            }
+
+            // If current is negative and previous is positive, always alert
+            if (current < 0 && previous >= 0) {
+                return true
+            }
+
+            // If both are negative, alert if absolute value has increased by 10%
+            if (current < 0 && previous < 0) {
+                return Math.abs(current) > Math.abs(previous) * 1.1
+            }
+
+            return false
+        }
+
+        if (hasSignificantDecrease(reputation, previousReputation)) {
             await this.createIncident(
                 `${identifier}`,
                 `${name} node reputation fell to ${numeral(reputation).format('0,0')}!`

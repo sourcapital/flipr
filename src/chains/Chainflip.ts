@@ -327,8 +327,8 @@ export class Chainflip extends Polkadot {
         networkReputationGauge.labels('worstTop10Threshold').set(worstTop10Threshold)
         networkReputationGauge.labels('worst').set(worst)
 
-        // Alert if node has below 2000 reputation
-        if (node.reputation < 2000) {
+        // Alert if node has below 2880 (max) reputation
+        if (node.reputation < 2880) {
             await global.betterStack?.createReputationIncident(Chainflip.name, node.reputation)
         } else {
             await global.betterStack?.resolveIncidents(Chainflip.name, IncidentType.REPUTATION)
